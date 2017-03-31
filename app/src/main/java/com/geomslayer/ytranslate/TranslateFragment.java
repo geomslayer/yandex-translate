@@ -1,5 +1,6 @@
 package com.geomslayer.ytranslate;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -7,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.geomslayer.ytranslate.network.Response;
@@ -22,12 +24,25 @@ import retrofit2.Callback;
 public class TranslateFragment extends Fragment {
 
     private EditText toTranslate;
-    private TextView translation;
+    private TextView translationView;
     private Button translateButton;
-    private Button addToFavorites;
+    private ImageView clearButton;
+    private ImageView favoriteButton;
+    private OnSetupListener callback;
 
     public static TranslateFragment newInstance() {
         return new TranslateFragment();
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+
+        if (context instanceof OnSetupListener) {
+            callback = (OnSetupListener) context;
+        } else {
+            throw new UnsupportedOperationException("Context must implement Callback!");
+        }
     }
 
     @Override
@@ -35,12 +50,14 @@ public class TranslateFragment extends Fragment {
                              Bundle savedInstanceState) {
         View fragmentView = inflater.inflate(R.layout.fragment_translate, container, false);
 
-        translation = (TextView) fragmentView.findViewById(R.id.translationTextView);
+        translationView = (TextView) fragmentView.findViewById(R.id.translationTextView);
         toTranslate = (EditText) fragmentView.findViewById(R.id.translateEditText);
         translateButton = (Button) fragmentView.findViewById(R.id.translateButton);
-        addToFavorites = (Button) fragmentView.findViewById(R.id.favoritesButton);
+        favoriteButton = (ImageView) fragmentView.findViewById(R.id.favoriteButton);
+        clearButton = (ImageView) fragmentView.findViewById(R.id.clearButton);
 
         addListeners();
+        setTranslation(callback.getCurrentTranslation());
 
         return fragmentView;
     }
@@ -61,15 +78,42 @@ public class TranslateFragment extends Fragment {
                             // empty request
                         }
                         String translated = stringBuilder.toString().trim();
-                        translation.setText(translated);
+                        translationView.setText(translated);
                         saveInHistory(rawText, translated);
                     }
 
                     @Override
                     public void onFailure(Call<Response> call, Throwable t) {
-                        translation.setText("Failure!");
+                        translationView.setText("Failure!");
                     }
                 });
+    }
+
+    public void setTranslation(Translation translation) {
+        if (translation == null) {
+            return;
+        }
+        toTranslate.setText(translation.getRawText());
+        translationView.setText(translation.getTranslation());
+        Realm realm = Realm.getDefaultInstance();
+        long count = 0;
+        try {
+            count = realm.where(Translation.class)
+                    .equalTo(Translation.Field.translation, translation.getTranslation())
+                    .equalTo(Translation.Field.inFavorites, true)
+                    .count();
+        } finally {
+            realm.close();
+        }
+        updateFavoriteButton(count > 0);
+    }
+
+    private void updateFavoriteButton(boolean isActive) {
+        if (isActive) {
+            favoriteButton.setImageResource(R.drawable.ic_favorite_active);
+        } else {
+            favoriteButton.setImageResource(R.drawable.ic_favorite_inactive);
+        }
     }
 
     private void saveInHistory(String rawText, String translated) {
@@ -90,6 +134,7 @@ public class TranslateFragment extends Fragment {
                 translation.setInFavorites(false);
             }
             translation.setMoment(Calendar.getInstance().getTime());
+            updateFavoriteButton(translation.isInFavorites());
             realm.commitTransaction();
         } finally {
             realm.close();
@@ -103,10 +148,10 @@ public class TranslateFragment extends Fragment {
                 translate();
             }
         });
-        addToFavorites.setOnClickListener(new View.OnClickListener() {
+        favoriteButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                final String translated = translation.getText().toString().trim();
+                final String translated = translationView.getText().toString().trim();
                 if (translated.isEmpty()) {
                     return;
                 }
@@ -117,14 +162,27 @@ public class TranslateFragment extends Fragment {
                             .findFirst();
                     if (translation != null) {
                         realm.beginTransaction();
-                        translation.setInFavorites(true);
+                        translation.setInFavorites(!translation.isInFavorites());
                         realm.commitTransaction();
+                        updateFavoriteButton(translation.isInFavorites());
                     }
                 } finally {
                     realm.close();
                 }
             }
         });
+        clearButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                toTranslate.setText("");
+                translationView.setText("");
+                updateFavoriteButton(false);
+            }
+        });
+    }
+
+    interface OnSetupListener {
+        Translation getCurrentTranslation();
     }
 
 }

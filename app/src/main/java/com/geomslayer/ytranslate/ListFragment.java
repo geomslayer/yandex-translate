@@ -1,5 +1,6 @@
 package com.geomslayer.ytranslate;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.DividerItemDecoration;
@@ -12,17 +13,24 @@ import android.view.ViewGroup;
 
 import com.geomslayer.ytranslate.storage.Translation;
 
+import java.util.ArrayList;
+
 import io.realm.Realm;
 import io.realm.RealmResults;
 import io.realm.Sort;
 
-public class ListFragment extends Fragment {
+public class ListFragment extends Fragment
+        implements TranslationAdapter.FavoriteClickListener,
+        TranslationAdapter.ItemClickListener {
 
     private static final String TYPE = "type";
     public static final int HISTORY = 0;
     public static final int FAVORITES = 1;
 
     private RecyclerView recycler;
+    private TranslationAdapter adapter;
+
+    private Callback callback;
 
     public static ListFragment newInstance(int type) {
         ListFragment fragment = new ListFragment();
@@ -30,6 +38,17 @@ public class ListFragment extends Fragment {
         args.putInt(TYPE, type);
         fragment.setArguments(args);
         return fragment;
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+
+        if (context instanceof Callback) {
+            callback = (Callback) context;
+        } else {
+            throw new UnsupportedOperationException("Context must implement Callback!");
+        }
     }
 
     @Override
@@ -52,23 +71,48 @@ public class ListFragment extends Fragment {
 
     private void initRecyclerView() {
         Realm realm = Realm.getDefaultInstance();
-        RealmResults<Translation> dataset;
+        RealmResults<Translation> entries;
         if (getArguments().getInt(TYPE) == HISTORY) {
-            dataset = realm.where(Translation.class)
+            entries = realm.where(Translation.class)
                     .equalTo(Translation.Field.inHistory, true)
                     .findAllSorted(Translation.Field.moment, Sort.DESCENDING);
         } else {
-            dataset = realm.where(Translation.class)
+            entries = realm.where(Translation.class)
                     .equalTo(Translation.Field.inFavorites, true)
                     .findAllSorted(Translation.Field.moment, Sort.DESCENDING);
         }
-        TranslationAdapter adapter = new TranslationAdapter();
+        ArrayList<Translation> dataset = new ArrayList<>();
+        for (Translation entry : entries) {
+            dataset.add(entry);
+        }
+        adapter = new TranslationAdapter(this, this);
         adapter.setDataset(dataset);
         recycler.setAdapter(adapter);
         DividerItemDecoration decoration = new DividerItemDecoration(getActivity(),
                 DividerItemDecoration.VERTICAL);
         recycler.addItemDecoration(decoration);
         recycler.setLayoutManager(new LinearLayoutManager(getActivity()));
+    }
+
+    @Override
+    public void onFavoriteClick(int position) {
+        Realm realm = Realm.getDefaultInstance();
+        realm.beginTransaction();
+        Translation translation = adapter.getDataset().get(position);
+        translation.setInFavorites(!translation.isInFavorites());
+        realm.commitTransaction();
+        realm.close();
+        adapter.notifyItemChanged(position);
+    }
+
+    @Override
+    public void onItemClick(int position) {
+        Translation translation = adapter.getDataset().get(position);
+        callback.showTranslation(translation);
+    }
+
+    public interface Callback {
+        void showTranslation(Translation translation);
     }
 
 }

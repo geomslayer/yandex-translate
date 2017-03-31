@@ -4,19 +4,33 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 
-public class MainActivity extends AppCompatActivity {
+import com.geomslayer.ytranslate.storage.Translation;
+
+public class MainActivity extends AppCompatActivity
+        implements ListFragment.Callback, TranslateFragment.OnSetupListener {
+
+    public static final String HOME_TAG = "home";
+    public static final String HISTORY_TAG = "history";
+    public static final String FAVORITES_TAG = "favorites";
+
+    private BottomNavigationView navigation;
+    private Translation currentTranslation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
+        navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
-        navigation.setSelectedItemId(navigation.getSelectedItemId());
+
+        if (savedInstanceState == null) {
+            navigation.setSelectedItemId(R.id.nav_home);
+        }
     }
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
@@ -24,26 +38,58 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            FragmentManager fragManager = getSupportFragmentManager();
+            Fragment fragment;
+            String tag;
             switch (item.getItemId()) {
                 case R.id.nav_home:
-                    setFragment(TranslateFragment.newInstance());
-                    return true;
+                    tag = HOME_TAG;
+                    fragment = fragManager.findFragmentByTag(HOME_TAG);
+                    if (fragment == null) {
+                        fragment = TranslateFragment.newInstance();
+                    }
+                    break;
+
                 case R.id.nav_history:
-                    setFragment(ListFragment.newInstance(ListFragment.HISTORY));
-                    return true;
+                    tag = HISTORY_TAG;
+                    fragment = fragManager.findFragmentByTag(HISTORY_TAG);
+                    if (fragment == null) {
+                        fragment = ListFragment.newInstance(ListFragment.HISTORY);
+                    }
+                    break;
+
                 case R.id.nav_favorites:
-                    setFragment(ListFragment.newInstance(ListFragment.FAVORITES));
-                    return true;
+                    tag = FAVORITES_TAG;
+                    fragment = fragManager.findFragmentByTag(FAVORITES_TAG);
+                    if (fragment == null) {
+                        fragment = ListFragment.newInstance(ListFragment.FAVORITES);
+                    }
+                    break;
+
+                default:
+                    return false;
             }
-            return false;
+
+            setFragment(fragment, tag);
+            return true;
         }
 
     };
 
-    private void setFragment(Fragment fragment) {
+    private void setFragment(Fragment fragment, String tag) {
         getSupportFragmentManager().beginTransaction()
-                .replace(R.id.content, fragment)
+                .replace(R.id.content, fragment, tag)
                 .commit();
     }
 
+    @Override
+    public void showTranslation(Translation translation) {
+        currentTranslation = translation;
+        navigation.setSelectedItemId(R.id.nav_home);
+    }
+
+    @Override
+    public Translation getCurrentTranslation() {
+        return currentTranslation;
+    }
 }

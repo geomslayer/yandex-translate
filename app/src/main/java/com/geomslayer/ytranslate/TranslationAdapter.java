@@ -1,5 +1,6 @@
 package com.geomslayer.ytranslate;
 
+import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,17 +10,26 @@ import android.widget.TextView;
 
 import com.geomslayer.ytranslate.storage.Translation;
 
-import io.realm.RealmResults;
+import java.util.ArrayList;
 
 public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.ViewHolder> {
 
-    private RealmResults<Translation> dataset;
+    private final ItemClickListener itemListener;
+    private final FavoriteClickListener favListener;
 
-    public RealmResults<Translation> getDataset() {
+    private ArrayList<Translation> dataset;
+
+    public ArrayList<Translation> getDataset() {
         return dataset;
     }
 
-    public void setDataset(RealmResults<Translation> dataset) {
+    public TranslationAdapter(@NonNull FavoriteClickListener favListener,
+                              @NonNull ItemClickListener itemListener) {
+        this.favListener = favListener;
+        this.itemListener = itemListener;
+    }
+
+    public void setDataset(ArrayList<Translation> dataset) {
         this.dataset = dataset;
         notifyDataSetChanged();
     }
@@ -28,7 +38,7 @@ public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_translation, parent, false);
-        return new ViewHolder(view);
+        return new ViewHolder(view, favListener, itemListener);
     }
 
     @Override
@@ -47,12 +57,26 @@ public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.
         TextView translationTextView;
         ImageView favorite;
 
-        public ViewHolder(View itemView) {
+        public ViewHolder(View itemView, final FavoriteClickListener favListener,
+                          final ItemClickListener itemListener) {
             super(itemView);
 
             rawText = (TextView) itemView.findViewById(R.id.rawText);
             translationTextView = (TextView) itemView.findViewById(R.id.translation);
-            favorite = (ImageView) itemView.findViewById(R.id.favoritesButton);
+            favorite = (ImageView) itemView.findViewById(R.id.favoriteButton);
+
+            favorite.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    favListener.onFavoriteClick(getAdapterPosition());
+                }
+            });
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    itemListener.onItemClick(getAdapterPosition());
+                }
+            });
         }
 
         public void bindTranslation(Translation translation) {
@@ -65,6 +89,14 @@ public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.
             }
         }
 
+    }
+
+    interface FavoriteClickListener {
+        void onFavoriteClick(int position);
+    }
+
+    interface ItemClickListener {
+        void onItemClick(int position);
     }
 
 }
