@@ -2,17 +2,20 @@ package com.geomslayer.ytranslate;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
 import com.geomslayer.ytranslate.network.Response;
 import com.geomslayer.ytranslate.network.TranslateApi;
+import com.geomslayer.ytranslate.storage.Translation;
 
+import java.util.Calendar;
+
+import io.realm.Realm;
 import retrofit2.Call;
 import retrofit2.Callback;
 
@@ -20,6 +23,8 @@ public class TranslateFragment extends Fragment {
 
     private EditText toTranslate;
     private TextView translation;
+    private Button translateButton;
+    private Button addToFavorites;
 
     public static TranslateFragment newInstance() {
         return new TranslateFragment();
@@ -32,30 +37,22 @@ public class TranslateFragment extends Fragment {
 
         translation = (TextView) fragmentView.findViewById(R.id.translationTextView);
         toTranslate = (EditText) fragmentView.findViewById(R.id.translateEditText);
-        toTranslate.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+        translateButton = (Button) fragmentView.findViewById(R.id.translateButton);
+        addToFavorites = (Button) fragmentView.findViewById(R.id.addToFavoritesButton);
 
-            @Override
-            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
-
-            @Override
-            public void afterTextChanged(Editable editable) {
-                translate();
-            }
-        });
+        addListeners();
 
         return fragmentView;
     }
 
     private void translate() {
-        String text = toTranslate.getText().toString();
+        final String rawText = toTranslate.getText().toString().trim();
         BaseApp.getApi()
-                .getTranslation(TranslateApi.KEY, text, "en-ru")
+                .getTranslation(TranslateApi.KEY, rawText, "en-ru")
                 .enqueue(new Callback<Response>() {
                     @Override
                     public void onResponse(Call<Response> call, retrofit2.Response<Response> response) {
-                        StringBuilder  stringBuilder = new StringBuilder();
+                        StringBuilder stringBuilder = new StringBuilder();
                         try {
                             for (String str : response.body().getText()) {
                                 stringBuilder.append(str).append('\n');
@@ -63,14 +60,55 @@ public class TranslateFragment extends Fragment {
                         } catch (NullPointerException e) {
                             // empty request
                         }
-                        translation.setText(stringBuilder.toString().trim());
+                        String translated = stringBuilder.toString().trim();
+                        translation.setText(translated);
+                        saveInHistory(rawText, translated);
                     }
 
                     @Override
                     public void onFailure(Call<Response> call, Throwable t) {
-
+                        translation.setText("Failure!");
                     }
                 });
+    }
+
+    private void saveInHistory(String rawText, String translated) {
+        if (translated.isEmpty() || rawText.isEmpty()) {
+            return;
+        }
+        Realm realm = Realm.getDefaultInstance();
+        try {
+            Translation translation = realm.where(Translation.class)
+                    .equalTo("rawText", rawText)
+                    .findFirst();
+            realm.beginTransaction();
+            if (translation == null) {
+                translation = realm.createObject(Translation.class);
+                translation.setRawText(rawText);
+                translation.setTranslation(translated);
+                translation.setInHistory(true);
+                translation.setInFavourites(false);
+            }
+            translation.setMoment(Calendar.getInstance().getTime());
+            realm.commitTransaction();
+        } finally {
+            realm.close();
+        }
+    }
+
+    private void addListeners() {
+        translateButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                translate();
+            }
+        });
+        addToFavorites.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // TODO
+            }
+        });
     }
 
 }
