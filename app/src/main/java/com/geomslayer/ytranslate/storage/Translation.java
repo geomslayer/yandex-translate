@@ -5,11 +5,20 @@ import java.util.Date;
 import io.realm.RealmObject;
 
 public class Translation extends RealmObject {
+
+    public interface Field {
+        String rawText = "rawText";
+        String translation = "translation";
+        String moment = "moment";
+        String inHistory = "inHistory";
+        String inFavorites = "inFavorites";
+    }
+
     private String rawText;
     private String translation;
     private Date moment;
     private boolean inHistory;
-    private boolean inFavourites;
+    private boolean inFavorites;
 
     public String getRawText() {
         return rawText;
@@ -43,12 +52,12 @@ public class Translation extends RealmObject {
         this.inHistory = inHistory;
     }
 
-    public boolean isInFavourites() {
-        return inFavourites;
+    public boolean isInFavorites() {
+        return inFavorites;
     }
 
-    public void setInFavourites(boolean inFavourites) {
-        this.inFavourites = inFavourites;
+    public void setInFavorites(boolean inFavorites) {
+        this.inFavorites = inFavorites;
     }
 
 }

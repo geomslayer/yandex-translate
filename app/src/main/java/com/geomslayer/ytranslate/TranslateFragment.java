@@ -38,7 +38,7 @@ public class TranslateFragment extends Fragment {
         translation = (TextView) fragmentView.findViewById(R.id.translationTextView);
         toTranslate = (EditText) fragmentView.findViewById(R.id.translateEditText);
         translateButton = (Button) fragmentView.findViewById(R.id.translateButton);
-        addToFavorites = (Button) fragmentView.findViewById(R.id.addToFavoritesButton);
+        addToFavorites = (Button) fragmentView.findViewById(R.id.favoritesButton);
 
         addListeners();
 
@@ -79,7 +79,7 @@ public class TranslateFragment extends Fragment {
         Realm realm = Realm.getDefaultInstance();
         try {
             Translation translation = realm.where(Translation.class)
-                    .equalTo("rawText", rawText)
+                    .equalTo(Translation.Field.rawText, rawText)
                     .findFirst();
             realm.beginTransaction();
             if (translation == null) {
@@ -87,7 +87,7 @@ public class TranslateFragment extends Fragment {
                 translation.setRawText(rawText);
                 translation.setTranslation(translated);
                 translation.setInHistory(true);
-                translation.setInFavourites(false);
+                translation.setInFavorites(false);
             }
             translation.setMoment(Calendar.getInstance().getTime());
             realm.commitTransaction();
@@ -106,7 +106,23 @@ public class TranslateFragment extends Fragment {
         addToFavorites.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // TODO
+                final String translated = translation.getText().toString().trim();
+                if (translated.isEmpty()) {
+                    return;
+                }
+                Realm realm = Realm.getDefaultInstance();
+                try {
+                    Translation translation = realm.where(Translation.class)
+                            .equalTo(Translation.Field.translation, translated)
+                            .findFirst();
+                    if (translation != null) {
+                        realm.beginTransaction();
+                        translation.setInFavorites(true);
+                        realm.commitTransaction();
+                    }
+                } finally {
+                    realm.close();
+                }
             }
         });
     }

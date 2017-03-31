@@ -5,16 +5,18 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:clickable="true"
-    android:background="?android:selectableItemBackground">
+    android:background="?android:selectableItemBackground"
+    android:clickable="true">
 
     <TextView
         android:id="@+id/rawText"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:layout_marginStart="8dp"
         android:ellipsize="end"
         android:lines="1"
-        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintLeft_toRightOf="@+id/favoritesButton"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="raw raw"/>
@@ -29,5 +31,16 @@
         app:layout_constraintRight_toRightOf="@+id/rawText"
         app:layout_constraintTop_toBottomOf="@+id/rawText"
         tools:text="translation"/>
+
+    <ImageView
+        android:id="@+id/favoritesButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:layout_marginStart="8dp"
+        app:layout_constraintBottom_toBottomOf="@+id/translation"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/rawText"
+        app:srcCompat="@drawable/ic_favorite_active"/>
 
 </android.support.constraint.ConstraintLayout>

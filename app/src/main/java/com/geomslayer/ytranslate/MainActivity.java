@@ -25,14 +25,14 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
             switch (item.getItemId()) {
-                case R.id.navigation_home:
+                case R.id.nav_home:
                     setFragment(TranslateFragment.newInstance());
                     return true;
-                case R.id.navigation_dashboard:
-                    setFragment(FavoritesFragment.newInstance());
+                case R.id.nav_history:
+                    setFragment(ListFragment.newInstance(ListFragment.HISTORY));
                     return true;
-                case R.id.navigation_notifications:
-                    setFragment(HistoryFragment.newInstance());
+                case R.id.nav_favorites:
+                    setFragment(ListFragment.newInstance(ListFragment.FAVORITES));
                     return true;
             }
             return false;
