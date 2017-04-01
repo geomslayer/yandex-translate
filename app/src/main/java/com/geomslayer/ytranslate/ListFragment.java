@@ -27,6 +27,8 @@ public class ListFragment extends Fragment
     public static final int HISTORY = 0;
     public static final int FAVORITES = 1;
 
+    public static final String LAST_QUERY = "last_query";
+
     private RecyclerView recycler;
     private TranslationAdapter adapter;
 

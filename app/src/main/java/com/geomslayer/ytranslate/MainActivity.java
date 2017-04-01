@@ -11,7 +11,7 @@ import android.view.MenuItem;
 import com.geomslayer.ytranslate.storage.Translation;
 
 public class MainActivity extends AppCompatActivity
-        implements ListFragment.Callback, TranslateFragment.OnSetupListener {
+        implements ListFragment.Callback {
 
     public static final String HOME_TAG = "home";
     public static final String HISTORY_TAG = "history";
@@ -84,12 +84,8 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void showTranslation(Translation translation) {
-        currentTranslation = translation;
+        TranslationUtils.saveInSharedPreferences(this, translation);
         navigation.setSelectedItemId(R.id.nav_home);
     }
 
-    @Override
-    public Translation getCurrentTranslation() {
-        return currentTranslation;
-    }
 }

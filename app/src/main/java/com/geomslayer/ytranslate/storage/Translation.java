@@ -10,6 +10,8 @@ public class Translation extends RealmObject {
         String rawText = "rawText";
         String translation = "translation";
         String moment = "moment";
+        String langFrom = "langFrom";
+        String langTo = "langTo";
         String inHistory = "inHistory";
         String inFavorites = "inFavorites";
     }
@@ -17,6 +19,8 @@ public class Translation extends RealmObject {
     private String rawText;
     private String translation;
     private Date moment;
+    private String langFrom;
+    private String langTo;
     private boolean inHistory;
     private boolean inFavorites;
 
@@ -60,4 +64,19 @@ public class Translation extends RealmObject {
         this.inFavorites = inFavorites;
     }
 
+    public String getLangFrom() {
+        return langFrom;
+    }
+
+    public void setLangFrom(String langFrom) {
+        this.langFrom = langFrom;
+    }
+
+    public String getLangTo() {
+        return langTo;
+    }
+
+    public void setLangTo(String langTo) {
+        this.langTo = langTo;
+    }
 }

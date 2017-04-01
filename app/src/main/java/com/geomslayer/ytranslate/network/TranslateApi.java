@@ -10,12 +10,15 @@ public interface TranslateApi {
 
     String BASE_URL = "https://translate.yandex.net";
 
+    String DEFAULT_UI = "en";
+
     @GET("api/v1.5/tr.json/translate")
     Call<Response> getTranslation(@Query("key") String key,
                                   @Query("text") String text,
                                   @Query("lang") String lang);
 
     @GET("/api/v1.5/tr.json/getLangs")
-    Call<LangCollection> getLangs(@Query("key") String key);
+    Call<LangCollection> getLanguages(@Query("key") String key,
+                                      @Query("ui") String ui);
 
 }

@@ -1,8 +1,8 @@
 package com.geomslayer.ytranslate;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,11 +11,14 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.geomslayer.ytranslate.network.LangCollection;
 import com.geomslayer.ytranslate.network.Response;
 import com.geomslayer.ytranslate.network.TranslateApi;
+import com.geomslayer.ytranslate.storage.Language;
 import com.geomslayer.ytranslate.storage.Translation;
 
 import java.util.Calendar;
+import java.util.Map;
 
 import io.realm.Realm;
 import retrofit2.Call;
@@ -29,20 +32,12 @@ public class TranslateFragment extends Fragment {
     private ImageView clearButton;
     private ImageView favoriteButton;
     private OnSetupListener callback;
+    private ImageView swapButton;
+    private TextView leftLanguage;
+    private TextView rightLanguage;
 
     public static TranslateFragment newInstance() {
         return new TranslateFragment();
-    }
-
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-
-        if (context instanceof OnSetupListener) {
-            callback = (OnSetupListener) context;
-        } else {
-            throw new UnsupportedOperationException("Context must implement Callback!");
-        }
     }
 
     @Override
@@ -55,11 +50,20 @@ public class TranslateFragment extends Fragment {
         translateButton = (Button) fragmentView.findViewById(R.id.translateButton);
         favoriteButton = (ImageView) fragmentView.findViewById(R.id.favoriteButton);
         clearButton = (ImageView) fragmentView.findViewById(R.id.clearButton);
+        swapButton = (ImageView) fragmentView.findViewById(R.id.swapButton);
+        leftLanguage = (TextView) fragmentView.findViewById(R.id.leftLang);
+        rightLanguage = (TextView) fragmentView.findViewById(R.id.rightLang);
 
         addListeners();
-        setTranslation(callback.getCurrentTranslation());
+        setTranslation(TranslationUtils.restoreFromSharedPreferences(getActivity()));
+        fetchLanguages();
+        prepareScreen();
 
         return fragmentView;
+    }
+
+    private void prepareScreen() {
+        setTranslation(TranslationUtils.restoreFromSharedPreferences(getActivity()));
     }
 
     private void translate() {
@@ -79,12 +83,12 @@ public class TranslateFragment extends Fragment {
                         }
                         String translated = stringBuilder.toString().trim();
                         translationView.setText(translated);
-                        saveInHistory(rawText, translated);
+                        saveInHistory();
                     }
 
                     @Override
                     public void onFailure(Call<Response> call, Throwable t) {
-                        translationView.setText("Failure!");
+                        translationView.setText(t.getMessage());
                     }
                 });
     }
@@ -93,11 +97,20 @@ public class TranslateFragment extends Fragment {
         if (translation == null) {
             return;
         }
-        toTranslate.setText(translation.getRawText());
-        translationView.setText(translation.getTranslation());
+
         Realm realm = Realm.getDefaultInstance();
+        String langFrom;
+        String langTo;
         long count = 0;
         try {
+            langFrom = realm.where(Language.class)
+                    .equalTo(Language.Field.simpleName, translation.getLangFrom())
+                    .findFirst()
+                    .getName();
+            langTo = realm.where(Language.class)
+                    .equalTo(Language.Field.simpleName, translation.getLangTo())
+                    .findFirst()
+                    .getName();
             count = realm.where(Translation.class)
                     .equalTo(Translation.Field.translation, translation.getTranslation())
                     .equalTo(Translation.Field.inFavorites, true)
@@ -105,6 +118,14 @@ public class TranslateFragment extends Fragment {
         } finally {
             realm.close();
         }
+
+        toTranslate.setText(translation.getRawText());
+        translationView.setText(translation.getTranslation());
+        leftLanguage.setTag(translation.getLangFrom());
+        leftLanguage.setText(langFrom);
+        rightLanguage.setTag(translation.getLangTo());
+        rightLanguage.setText(langTo);
+
         updateFavoriteButton(count > 0);
     }
 
@@ -116,8 +137,9 @@ public class TranslateFragment extends Fragment {
         }
     }
 
-    private void saveInHistory(String rawText, String translated) {
-        if (translated.isEmpty() || rawText.isEmpty()) {
+    private void saveInHistory() {
+        String rawText = toTranslate.getText().toString().trim();
+        if (rawText.isEmpty()) {
             return;
         }
         Realm realm = Realm.getDefaultInstance();
@@ -127,18 +149,60 @@ public class TranslateFragment extends Fragment {
                     .findFirst();
             realm.beginTransaction();
             if (translation == null) {
+                String translated = translationView.getText().toString().trim();
+                String langFrom = leftLanguage.getTag().toString();
+                String langTo = rightLanguage.getTag().toString();
                 translation = realm.createObject(Translation.class);
                 translation.setRawText(rawText);
                 translation.setTranslation(translated);
+                translation.setLangFrom(langFrom);
+                translation.setLangTo(langTo);
                 translation.setInHistory(true);
                 translation.setInFavorites(false);
             }
             translation.setMoment(Calendar.getInstance().getTime());
             updateFavoriteButton(translation.isInFavorites());
             realm.commitTransaction();
+
+
         } finally {
             realm.close();
         }
+    }
+
+    private void fetchLanguages() {
+        BaseApp.getApi()
+                .getLanguages(TranslateApi.KEY, TranslateApi.DEFAULT_UI)
+                .enqueue(new Callback<LangCollection>() {
+                    @Override
+                    public void onResponse(Call<LangCollection> call, retrofit2.Response<LangCollection> response) {
+                        Realm realm = Realm.getDefaultInstance();
+                        try {
+                            realm.beginTransaction();
+                            for (Map.Entry<String, String> langPair : response.body().getLangs().entrySet()) {
+                                String simpleName = langPair.getKey();
+                                String name = langPair.getValue();
+                                Language language = realm.where(Language.class)
+                                        .equalTo(Language.Field.simpleName, simpleName)
+                                        .findFirst();
+                                if (language == null) {
+                                    language = realm.createObject(Language.class);
+                                    language.setSimpleName(simpleName);
+                                    language.setName(name);
+                                }
+                                Log.d(simpleName, name);
+                            }
+                            realm.commitTransaction();
+                        } finally {
+                            realm.close();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<LangCollection> call, Throwable t) {
+
+                    }
+                });
     }
 
     private void addListeners() {
@@ -179,10 +243,12 @@ public class TranslateFragment extends Fragment {
                 updateFavoriteButton(false);
             }
         });
-    }
-
-    interface OnSetupListener {
-        Translation getCurrentTranslation();
+        swapButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // TODO
+            }
+        });
     }
 
 }
