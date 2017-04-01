@@ -66,7 +66,7 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
         rightLanguage = (TextView) fragmentView.findViewById(R.id.rightLang);
         parent = (ViewGroup) fragmentView;
 
-        addListeners();
+        initListeners();
         setTranslation(TranslationUtils.restoreFromSharedPreferences(getActivity()));
         fetchLanguages();
         prepareScreen();
@@ -193,11 +193,11 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
         }
     }
 
-    private void saveInHistory() {
+    private Translation saveInHistory() {
         String rawText = toTranslate.getText().toString().trim();
         String langTo = rightLanguage.getTag().toString();
         if (rawText.isEmpty()) {
-            return;
+            return null;
         }
         Realm realm = BaseApp.getRealm();
         Translation translation = realm.where(Translation.class)
@@ -220,6 +220,7 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
         updateFavoriteButton(translation.isInFavorites());
         realm.commitTransaction();
         TranslationUtils.saveInSharedPreferences(getActivity(), translation);
+        return translation;
     }
 
     private void fetchLanguages() {
@@ -253,24 +254,15 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
                 });
     }
 
-    private void addListeners() {
+    private void initListeners() {
         favoriteButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                final String rawText = toTranslate.getText().toString().trim();
-                final String langTo = rightLanguage.getTag().toString();
-                if (rawText.isEmpty()) {
-                    return;
-                }
-                Realm realm = BaseApp.getRealm();
-                Translation translation = realm.where(Translation.class)
-                        .equalTo(Translation.Field.rawText, rawText, Case.INSENSITIVE)
-                        .equalTo(Translation.Field.langTo, langTo)
-                        .findFirst();
+                Translation translation = saveInHistory();
                 if (translation != null) {
-                    realm.beginTransaction();
+                    BaseApp.getRealm().beginTransaction();
                     translation.setInFavorites(!translation.isInFavorites());
-                    realm.commitTransaction();
+                    BaseApp.getRealm().commitTransaction();
                     updateFavoriteButton(translation.isInFavorites());
                 }
             }
@@ -293,6 +285,8 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
                 CharSequence text = leftLanguage.getText();
                 leftLanguage.setText(rightLanguage.getText());
                 rightLanguage.setText(text);
+
+                // TODO add swap toTranslate and translation
             }
         });
         View.OnClickListener languageClickListener = new View.OnClickListener() {
@@ -308,7 +302,7 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
                     title = getString(R.string.languageTo);
                 }
                 LanguageFragment fragment = LanguageFragment.newInstance(title, type);
-                fragment.setTargetFragment(TranslateFragment.this, 300);
+                fragment.setTargetFragment(TranslateFragment.this, 666);
                 fragment.show(getActivity().getSupportFragmentManager(), "dialog");
             }
         };

@@ -32,7 +32,7 @@ public class LanguageAdapter extends RecyclerView.Adapter<LanguageAdapter.ViewHo
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(android.R.layout.simple_spinner_dropdown_item, parent, false);
+                .inflate(R.layout.item_language, parent, false);
         return new ViewHolder(view, listener);
     }
 
@@ -53,7 +53,7 @@ public class LanguageAdapter extends RecyclerView.Adapter<LanguageAdapter.ViewHo
         public ViewHolder(View itemView, final OnItemClickListener listener) {
             super(itemView);
 
-            text = (TextView) itemView.findViewById(android.R.id.text1);
+            text = (TextView) itemView.findViewById(R.id.content);
 
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
