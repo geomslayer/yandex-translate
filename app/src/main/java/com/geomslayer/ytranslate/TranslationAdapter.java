@@ -56,6 +56,7 @@ public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.
         TextView rawText;
         TextView translationTextView;
         ImageView favorite;
+        TextView languages;
 
         public ViewHolder(View itemView, final FavoriteClickListener favListener,
                           final ItemClickListener itemListener) {
@@ -64,6 +65,7 @@ public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.
             rawText = (TextView) itemView.findViewById(R.id.rawText);
             translationTextView = (TextView) itemView.findViewById(R.id.translation);
             favorite = (ImageView) itemView.findViewById(R.id.favoriteButton);
+            languages = (TextView) itemView.findViewById(R.id.languages);
 
             favorite.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -82,6 +84,7 @@ public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.
         public void bindTranslation(Translation translation) {
             rawText.setText(translation.getRawText());
             translationTextView.setText(translation.getTranslation());
+            languages.setText(translation.getLangFrom() + " - " + translation.getLangTo());
             if (translation.isInFavorites()) {
                 favorite.setImageResource(R.drawable.ic_favorite_active);
             } else {

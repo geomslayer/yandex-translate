@@ -4,7 +4,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
 
     <android.support.design.widget.AppBarLayout
         android:id="@+id/actionBarContainer"
@@ -36,6 +38,8 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
                     android:gravity="end"
                     android:padding="8dp"
                     android:textColor="@android:color/primary_text_dark"
@@ -56,6 +60,8 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
                     android:padding="8dp"
                     android:textColor="@android:color/primary_text_dark"
                     android:textSize="20sp"
@@ -86,10 +92,9 @@
             android:id="@+id/clearButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginRight="8dp"
-            android:layout_marginTop="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
+            android:padding="8dp"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/ic_clear"/>
@@ -100,19 +105,17 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
             android:layout_marginLeft="8dp"
-            android:layout_marginRight="8dp"
+            android:layout_marginRight="0dp"
             android:layout_marginTop="8dp"
             android:background="@android:color/transparent"
             android:gravity="top"
             android:hint="@string/enterText"
-            android:lines="4"
-            android:maxLines="4"
+            android:imeOptions="actionDone"
+            android:inputType="textCapSentences"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toLeftOf="@+id/clearButton"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.0"
             tools:text="Some rawText"/>
 
     </android.support.constraint.ConstraintLayout>
@@ -121,33 +124,27 @@
         android:id="@+id/translationTextView"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
+        android:layout_marginLeft="8dp"
         android:layout_marginRight="8dp"
         android:layout_marginTop="8dp"
+        android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
+        android:textColor="@color/colorTextDark"
         app:layout_constraintLeft_toLeftOf="@+id/textArea"
         app:layout_constraintRight_toLeftOf="@+id/favoriteButton"
-        app:layout_constraintTop_toBottomOf="@+id/translateButton"
-        tools:rawText="Translation"/>
-
-    <Button
-        android:id="@+id/translateButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/translate"
-        app:layout_constraintRight_toRightOf="@+id/textArea"
-        app:layout_constraintTop_toBottomOf="@+id/textArea"/>
+        app:layout_constraintTop_toTopOf="@+id/favoriteButton"
+        tools:text="Translation"/>
 
     <ImageView
         android:id="@+id/favoriteButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginRight="0dp"
         android:layout_marginTop="8dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:clickable="true"
         android:padding="8dp"
         app:layout_constraintRight_toRightOf="@+id/textArea"
-        app:layout_constraintTop_toBottomOf="@+id/translateButton"
+        app:layout_constraintTop_toBottomOf="@+id/textArea"
         app:srcCompat="@drawable/ic_favorite_inactive"/>
 
 </android.support.constraint.ConstraintLayout>

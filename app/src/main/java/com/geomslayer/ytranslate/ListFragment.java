@@ -15,7 +15,6 @@ import com.geomslayer.ytranslate.storage.Translation;
 
 import java.util.ArrayList;
 
-import io.realm.Realm;
 import io.realm.RealmResults;
 import io.realm.Sort;
 
@@ -72,21 +71,21 @@ public class ListFragment extends Fragment
     }
 
     private void initRecyclerView() {
-        Realm realm = Realm.getDefaultInstance();
         RealmResults<Translation> entries;
+        ArrayList<Translation> dataset = new ArrayList<>();
         if (getArguments().getInt(TYPE) == HISTORY) {
-            entries = realm.where(Translation.class)
+            entries = BaseApp.getRealm().where(Translation.class)
                     .equalTo(Translation.Field.inHistory, true)
                     .findAllSorted(Translation.Field.moment, Sort.DESCENDING);
         } else {
-            entries = realm.where(Translation.class)
+            entries = BaseApp.getRealm().where(Translation.class)
                     .equalTo(Translation.Field.inFavorites, true)
                     .findAllSorted(Translation.Field.moment, Sort.DESCENDING);
         }
-        ArrayList<Translation> dataset = new ArrayList<>();
         for (Translation entry : entries) {
             dataset.add(entry);
         }
+
         adapter = new TranslationAdapter(this, this);
         adapter.setDataset(dataset);
         recycler.setAdapter(adapter);
@@ -98,12 +97,10 @@ public class ListFragment extends Fragment
 
     @Override
     public void onFavoriteClick(int position) {
-        Realm realm = Realm.getDefaultInstance();
-        realm.beginTransaction();
+        BaseApp.getRealm().beginTransaction();
         Translation translation = adapter.getDataset().get(position);
         translation.setInFavorites(!translation.isInFavorites());
-        realm.commitTransaction();
-        realm.close();
+        BaseApp.getRealm().commitTransaction();
         adapter.notifyItemChanged(position);
     }
 

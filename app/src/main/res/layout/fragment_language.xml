@@ -1,0 +1,26 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:padding="24dp"
+    android:minWidth="340dp"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.geomslayer.ytranslate.LanguageFragment">
+
+    <TextView
+        android:id="@+id/title"
+        android:textAppearance="@style/AlertDialog.AppCompat"
+        android:textSize="20sp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:text="Choose language to"/>
+
+    <android.support.v7.widget.RecyclerView
+        android:layout_marginTop="16dp"
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
+</LinearLayout>

@@ -6,6 +6,7 @@ import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.MenuItem;
 
 import com.geomslayer.ytranslate.storage.Translation;
@@ -46,6 +47,7 @@ public class MainActivity extends AppCompatActivity
                     tag = HOME_TAG;
                     fragment = fragManager.findFragmentByTag(HOME_TAG);
                     if (fragment == null) {
+                        Log.d("MA", "new fragment!");
                         fragment = TranslateFragment.newInstance();
                     }
                     break;
