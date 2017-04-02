@@ -1,6 +1,8 @@
 package com.geomslayer.ytranslate;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.DividerItemDecoration;
@@ -11,6 +13,8 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.geomslayer.ytranslate.storage.Translation;
 
@@ -19,10 +23,11 @@ import java.util.ArrayList;
 import io.realm.RealmResults;
 import io.realm.Sort;
 
+import static com.geomslayer.ytranslate.BaseApp.getRealm;
+
 public class ListFragment extends Fragment
-        implements TranslationAdapter.FavoriteClickListener,
-        TranslationAdapter.ItemClickListener,
-        AlertFragment.DialogListener {
+        implements AlertFragment.DialogListener,
+        TranslationAdapter.AdapterListener {
 
     private static final String TYPE = "type";
     public static final int HISTORY = 0;
@@ -33,6 +38,7 @@ public class ListFragment extends Fragment
     private Toolbar toolbar;
     private RecyclerView recycler;
     private TranslationAdapter adapter;
+    private ViewGroup placeholderView;
 
     private Callback callback;
 
@@ -58,26 +64,42 @@ public class ListFragment extends Fragment
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View fragmentView = inflater.inflate(R.layout.fragment_history, container, false);
+        View fragmentView = inflater.inflate(R.layout.fragment_lists, container, false);
 
         toolbar = (Toolbar) fragmentView.findViewById(R.id.toolbar);
         recycler = (RecyclerView) fragmentView.findViewById(R.id.recyclerView);
+        placeholderView = (ViewGroup) fragmentView.findViewById(R.id.placeholder);
 
         initToolbar();
         initRecyclerView();
+        initPlaceholder();
 
         return fragmentView;
+    }
+
+    private void initPlaceholder() {
+        TextView message = (TextView) placeholderView.findViewById(R.id.placeholderMessage);
+        ImageView icon = (ImageView) placeholderView.findViewById(R.id.placeholderIcon);
+        String mask = getString(R.string.noTranslations);
+        String screenName;
+        if (getArguments().getInt(TYPE) == FAVORITES) {
+            icon.setImageResource(R.drawable.ic_stars_grey);
+            screenName = getString(R.string.favorites).toLowerCase();
+        } else {
+            screenName = getString(R.string.history).toLowerCase();
+        }
+        message.setText(String.format(mask, screenName));
     }
 
     private void initRecyclerView() {
         RealmResults<Translation> entries;
         ArrayList<Translation> dataset = new ArrayList<>();
         if (getArguments().getInt(TYPE) == HISTORY) {
-            entries = BaseApp.getRealm().where(Translation.class)
+            entries = getRealm().where(Translation.class)
                     .equalTo(Translation.Field.inHistory, true)
                     .findAllSorted(Translation.Field.moment, Sort.DESCENDING);
         } else {
-            entries = BaseApp.getRealm().where(Translation.class)
+            entries = getRealm().where(Translation.class)
                     .equalTo(Translation.Field.inFavorites, true)
                     .findAllSorted(Translation.Field.moment, Sort.DESCENDING);
         }
@@ -85,7 +107,7 @@ public class ListFragment extends Fragment
             dataset.add(entry);
         }
 
-        adapter = new TranslationAdapter(this, this);
+        adapter = new TranslationAdapter(this);
         adapter.setDataset(dataset);
         recycler.setAdapter(adapter);
         DividerItemDecoration decoration = new DividerItemDecoration(getActivity(),
@@ -119,10 +141,10 @@ public class ListFragment extends Fragment
 
     @Override
     public void onFavoriteClick(int position) {
-        BaseApp.getRealm().beginTransaction();
+        getRealm().beginTransaction();
         Translation translation = adapter.getDataset().get(position);
         translation.setInFavorites(!translation.isInFavorites());
-        BaseApp.getRealm().commitTransaction();
+        getRealm().commitTransaction();
         adapter.notifyItemChanged(position);
     }
 
@@ -133,14 +155,52 @@ public class ListFragment extends Fragment
     }
 
     @Override
+    public void onItemLongClick(final int position) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setItems(new String[]{getString(R.string.delete)}, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int i) {
+                final int type = getArguments().getInt(TYPE);
+                getRealm().beginTransaction();
+                if (type == HISTORY) {
+                    adapter.getDataset().get(position).setInHistory(false);
+                } else {
+                    adapter.getDataset().get(position).setInFavorites(false);
+                }
+                getRealm().commitTransaction();
+                adapter.getDataset().remove(position);
+                if (adapter.getDataset().isEmpty()) {
+                    adapter.notifyDataSetHasChanged();
+                } else {
+                    adapter.notifyItemRemoved(position);
+                }
+            }
+        });
+        builder.show();
+    }
+
+    @Override
+    public void changeNotificationVisibility(boolean visible) {
+        placeholderView.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+    @Override
     public void onPositiveButtonClick() {
-        BaseApp.getRealm().beginTransaction();
+        final int type = getArguments().getInt(TYPE);
+        getRealm().beginTransaction();
         for (Translation translation : adapter.getDataset()) {
-            translation.deleteFromRealm();
+            if (type == HISTORY) {
+                translation.setInHistory(false);
+            } else {
+                translation.setInFavorites(false);
+            }
+            if (!translation.isInFavorites() && !translation.isInHistory()) {
+                translation.deleteFromRealm();
+            }
         }
-        BaseApp.getRealm().commitTransaction();
+        getRealm().commitTransaction();
         adapter.getDataset().clear();
-        adapter.notifyDataSetChanged();
+        adapter.notifyDataSetHasChanged();
     }
 
     public interface Callback {

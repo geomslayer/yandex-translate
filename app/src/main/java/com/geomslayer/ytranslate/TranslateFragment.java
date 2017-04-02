@@ -4,11 +4,9 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -27,25 +25,27 @@ import java.util.Calendar;
 import java.util.Map;
 
 import io.realm.Case;
-import io.realm.Realm;
 import retrofit2.Call;
 import retrofit2.Callback;
+
+import static com.geomslayer.ytranslate.BaseApp.getRealm;
 
 public class TranslateFragment extends Fragment implements LanguageFragment.LanguageDialogListener {
 
     private static final int FROM = 0;
     private static final int TO = 1;
 
-    private ViewGroup parent;
     private EditText toTranslate;
     private TextView translationView;
-    private Button translateButton;
     private ImageView clearButton;
     private ImageView favoriteButton;
     private ImageView swapButton;
     private TextView leftLanguage;
     private TextView rightLanguage;
+    private ViewGroup placeholder;
     private Unregistrar unregistrar;
+
+    private boolean errorConnection = false;
 
     public static TranslateFragment newInstance() {
         return new TranslateFragment();
@@ -56,22 +56,19 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
                              Bundle savedInstanceState) {
         View fragmentView = inflater.inflate(R.layout.fragment_translate, container, false);
 
-        translationView = (TextView) fragmentView.findViewById(R.id.translationTextView);
         toTranslate = (EditText) fragmentView.findViewById(R.id.translateEditText);
-        // translateButton = (Button) fragmentView.findViewById(R.id.translateButton);
+        translationView = (TextView) fragmentView.findViewById(R.id.translationTextView);
+        leftLanguage = (TextView) fragmentView.findViewById(R.id.leftLang);
+        rightLanguage = (TextView) fragmentView.findViewById(R.id.rightLang);
         favoriteButton = (ImageView) fragmentView.findViewById(R.id.favoriteButton);
         clearButton = (ImageView) fragmentView.findViewById(R.id.clearButton);
         swapButton = (ImageView) fragmentView.findViewById(R.id.swapButton);
-        leftLanguage = (TextView) fragmentView.findViewById(R.id.leftLang);
-        rightLanguage = (TextView) fragmentView.findViewById(R.id.rightLang);
-        parent = (ViewGroup) fragmentView;
+        placeholder = (ViewGroup) fragmentView.findViewById(R.id.placeholder);
 
         initListeners();
-        setTranslation(TranslationUtils.restoreFromSharedPreferences(getActivity()));
-        fetchLanguages();
-        prepareScreen();
-
         prepareEditText();
+        setTranslation(TranslationUtils.restoreFromSharedPreferences(getActivity()));
+        fetchLanguages(); // TODO
 
         return fragmentView;
     }
@@ -111,47 +108,13 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
                 });
     }
 
-    private void prepareScreen() {
-        setTranslation(TranslationUtils.restoreFromSharedPreferences(getActivity()));
-    }
-
-    private void translate() {
-        final String rawText = toTranslate.getText().toString().trim();
-        final String langFrom = leftLanguage.getTag().toString();
-        final String langTo = rightLanguage.getTag().toString();
-
-        BaseApp.getApi()
-                .getTranslation(TranslateApi.KEY, rawText, langFrom + "-" + langTo)
-                .enqueue(new Callback<Response>() {
-                    @Override
-                    public void onResponse(Call<Response> call, retrofit2.Response<Response> response) {
-                        StringBuilder stringBuilder = new StringBuilder();
-                        try {
-                            for (String str : response.body().getText()) {
-                                stringBuilder.append(str).append('\n');
-                            }
-                        } catch (NullPointerException e) {
-                            // empty request
-                        }
-                        String translated = stringBuilder.toString().trim();
-                        translationView.setText(translated);
-                        boolean inFav = checkForFravorites(rawText, langTo);
-                        updateFavoriteButton(inFav);
-                    }
-
-                    @Override
-                    public void onFailure(Call<Response> call, Throwable t) {
-                        translationView.setText(t.getMessage());
-                    }
-                });
-    }
-
-    private boolean checkForFravorites(String rawText, String langTo) {
-        Translation translation = BaseApp.getRealm().where(Translation.class)
-                .equalTo(Translation.Field.rawText, rawText, Case.INSENSITIVE)
-                .equalTo(Translation.Field.langTo, langTo)
-                .findFirst();
-        return translation != null && translation.isInFavorites();
+    private Translation getCurrentTranslation() {
+        Translation translation = new Translation();
+        translation.setRawText(toTranslate.getText().toString().trim());
+        translation.setTranslation(translationView.getText().toString().trim());
+        translation.setLangFrom(leftLanguage.getTag().toString());
+        translation.setLangTo(rightLanguage.getTag().toString());
+        return translation;
     }
 
     public void setTranslation(Translation translation) {
@@ -159,30 +122,98 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
             return;
         }
 
-        String langFrom = "";
-        String langTo = "";
-        try {
-            langFrom = BaseApp.getRealm().where(Language.class)
-                    .equalTo(Language.Field.simpleName, translation.getLangFrom())
-                    .findFirst()
-                    .getName();
-            langTo = BaseApp.getRealm().where(Language.class)
-                    .equalTo(Language.Field.simpleName, translation.getLangTo())
-                    .findFirst()
-                    .getName();
-        } catch (NullPointerException e) {
-            // fine
-        }
+        String langFrom = getLanguageName(translation.getLangFrom());
+        String langTo = getLanguageName(translation.getLangTo());
 
-        toTranslate.setText(translation.getRawText());
-        translationView.setText(translation.getTranslation());
         leftLanguage.setTag(translation.getLangFrom());
         leftLanguage.setText(langFrom);
         rightLanguage.setTag(translation.getLangTo());
         rightLanguage.setText(langTo);
 
-        boolean inFav = checkForFravorites(translation.getRawText(), translation.getLangTo());
-        updateFavoriteButton(inFav);
+        translationView.setText(translation.getTranslation());
+        toTranslate.setText(translation.getRawText());
+
+        updateFavoriteButton(checkForFavorites(translation));
+    }
+
+    private Translation findTranslation(Translation translation) {
+        return getRealm().where(Translation.class)
+                .equalTo(Translation.Field.rawText, translation.getRawText(), Case.INSENSITIVE)
+                .equalTo(Translation.Field.langTo, translation.getLangTo())
+                .findFirst();
+    }
+
+    private void translate() {
+        final Translation cur = getCurrentTranslation();
+
+        if (cur.getRawText().isEmpty()) {
+            return;
+        }
+
+        Translation realmTranslation = findTranslation(cur);
+        if (realmTranslation != null) {
+            hidePlaceholder();
+            updateFavoriteButton(realmTranslation.isInFavorites());
+            translationView.setText(realmTranslation.getTranslation());
+            return;
+        }
+
+        BaseApp.getApi()
+                .detectLanguage(cur.getRawText(), cur.getLangFrom())
+                .enqueue(new Callback<Response>() {
+                    @Override
+                    public void onResponse(Call<Response> call, retrofit2.Response<Response> response) {
+                        String lang = response.body().getLang();
+                        if (lang != null) {
+                            cur.setLangFrom(lang);
+                            setSourceLanguage(lang);
+                        }
+                        finishTranslation(cur);
+                    }
+
+                    @Override
+                    public void onFailure(Call<Response> call, Throwable t) {
+                        translationView.setText("");
+                        showPlaceholder();
+                    }
+                });
+    }
+
+    private void finishTranslation(final Translation translation) {
+        BaseApp.getApi()
+                .getTranslation(translation.getRawText(),
+                        translation.getLangFrom() + "-" + translation.getLangTo())
+                .enqueue(new Callback<Response>() {
+                    @Override
+                    public void onResponse(Call<Response> call, retrofit2.Response<Response> response) {
+                        hidePlaceholder();
+                        StringBuilder stringBuilder = new StringBuilder();
+                        for (String str : response.body().getText()) {
+                            stringBuilder.append(str).append('\n');
+                        }
+                        translation.setTranslation(stringBuilder.toString().trim());
+                        updateFavoriteButton(checkForFavorites(translation));
+                        translationView.setText(translation.getTranslation());
+                    }
+
+                    @Override
+                    public void onFailure(Call<Response> call, Throwable t) {
+                        translationView.setText("");
+                        showPlaceholder();
+                    }
+                });
+    }
+
+    private boolean checkForFavorites(Translation translation) {
+        Translation realmTranslation = findTranslation(translation);
+        return realmTranslation != null && realmTranslation.isInFavorites();
+    }
+
+    private String getLanguageName(String simpleName) {
+        Language lang = getRealm().where(Language.class)
+                .equalTo(Language.Field.simpleName, simpleName)
+                .findFirst();
+        return lang == null ? "" : lang.getName();
     }
 
     private void updateFavoriteButton(boolean isActive) {
@@ -194,63 +225,67 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
     }
 
     private Translation saveInHistory() {
-        String rawText = toTranslate.getText().toString().trim();
-        String langTo = rightLanguage.getTag().toString();
-        if (rawText.isEmpty()) {
+        if (errorConnection) {
             return null;
         }
-        Realm realm = BaseApp.getRealm();
-        Translation translation = realm.where(Translation.class)
-                .equalTo(Translation.Field.rawText, rawText, Case.INSENSITIVE)
-                .equalTo(Translation.Field.langTo, langTo)
-                .findFirst();
-        realm.beginTransaction();
+
+        Translation cur = getCurrentTranslation();
+
+        if (cur.getRawText().isEmpty()) {
+            return null;
+        }
+
+        Translation translation = findTranslation(cur);
+
+        getRealm().beginTransaction();
         if (translation == null) {
-            String translated = translationView.getText().toString().trim();
-            String langFrom = leftLanguage.getTag().toString();
-            translation = realm.createObject(Translation.class);
-            translation.setRawText(rawText);
-            translation.setTranslation(translated);
-            translation.setLangFrom(langFrom);
-            translation.setLangTo(langTo);
-            translation.setInHistory(true);
+            translation = getRealm().copyToRealm(cur);
             translation.setInFavorites(false);
         }
+        translation.setInHistory(true);
         translation.setMoment(Calendar.getInstance().getTime());
-        updateFavoriteButton(translation.isInFavorites());
-        realm.commitTransaction();
+        getRealm().commitTransaction();
         TranslationUtils.saveInSharedPreferences(getActivity(), translation);
+
         return translation;
+    }
+
+    private void showPlaceholder() {
+        placeholder.setVisibility(View.VISIBLE);
+        errorConnection = true;
+    }
+
+    private void hidePlaceholder() {
+        placeholder.setVisibility(View.GONE);
+        errorConnection = false;
     }
 
     private void fetchLanguages() {
         BaseApp.getApi()
-                .getLanguages(TranslateApi.KEY, TranslateApi.DEFAULT_UI)
+                .getLanguages(TranslateApi.DEFAULT_UI)
                 .enqueue(new Callback<LangCollection>() {
                     @Override
                     public void onResponse(Call<LangCollection> call, retrofit2.Response<LangCollection> response) {
-                        Realm realm = BaseApp.getRealm();
-                        realm.beginTransaction();
+                        getRealm().beginTransaction();
                         for (Map.Entry<String, String> langPair : response.body().getLangs().entrySet()) {
                             String simpleName = langPair.getKey();
                             String name = langPair.getValue();
-                            Language language = realm.where(Language.class)
+                            Language language = getRealm().where(Language.class)
                                     .equalTo(Language.Field.simpleName, simpleName)
                                     .findFirst();
                             if (language == null) {
-                                language = realm.createObject(Language.class);
+                                language = getRealm().createObject(Language.class);
                                 language.setSimpleName(simpleName);
                                 language.setName(name);
                             }
-                            Log.d(simpleName, name);
                         }
-                        realm.commitTransaction();
+                        getRealm().commitTransaction();
+                        leftLanguage.setText(getLanguageName(leftLanguage.getTag().toString()));
+                        rightLanguage.setText(getLanguageName(rightLanguage.getTag().toString()));
                     }
 
                     @Override
-                    public void onFailure(Call<LangCollection> call, Throwable t) {
-
-                    }
+                    public void onFailure(Call<LangCollection> call, Throwable t) {}
                 });
     }
 
@@ -260,9 +295,9 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
             public void onClick(View view) {
                 Translation translation = saveInHistory();
                 if (translation != null) {
-                    BaseApp.getRealm().beginTransaction();
+                    getRealm().beginTransaction();
                     translation.setInFavorites(!translation.isInFavorites());
-                    BaseApp.getRealm().commitTransaction();
+                    getRealm().commitTransaction();
                     updateFavoriteButton(translation.isInFavorites());
                 }
             }
@@ -273,20 +308,17 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
                 toTranslate.setText("");
                 translationView.setText("");
                 updateFavoriteButton(false);
+                TranslationUtils.saveInSharedPreferences(getActivity(), getCurrentTranslation());
             }
         });
         swapButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Object tag = leftLanguage.getTag();
-                leftLanguage.setTag(rightLanguage.getTag());
-                rightLanguage.setTag(tag);
+                swapLanguages();
 
-                CharSequence text = leftLanguage.getText();
-                leftLanguage.setText(rightLanguage.getText());
-                rightLanguage.setText(text);
-
-                // TODO add swap toTranslate and translation
+                CharSequence text = translationView.getText();
+                translationView.setText(toTranslate.getText());
+                toTranslate.setText(text);
             }
         });
         View.OnClickListener languageClickListener = new View.OnClickListener() {
@@ -310,16 +342,46 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
         rightLanguage.setOnClickListener(languageClickListener);
     }
 
+    private void setSourceLanguage(String lang) {
+        if (lang.equals(leftLanguage.getTag().toString())) {
+            return;
+        }
+        if (lang.equals(rightLanguage.getTag().toString())) {
+            swapLanguages();
+            return;
+        }
+        leftLanguage.setTag(lang);
+        leftLanguage.setText(getLanguageName(lang));
+    }
+
+    private void swapLanguages() {
+        Object tag = leftLanguage.getTag();
+        leftLanguage.setTag(rightLanguage.getTag());
+        rightLanguage.setTag(tag);
+
+        CharSequence text = leftLanguage.getText();
+        leftLanguage.setText(rightLanguage.getText());
+        rightLanguage.setText(text);
+    }
+
     @Override
     public void onLanguageSelected(Language language, int type) {
-        TextView langView;
+        TextView currentLangView;
+        TextView otherLangView;
         if (type == FROM) {
-            langView = leftLanguage;
+            currentLangView = leftLanguage;
+            otherLangView = rightLanguage;
         } else {
-            langView = rightLanguage;
+            currentLangView = rightLanguage;
+            otherLangView = leftLanguage;
         }
-        langView.setText(language.getName());
-        langView.setTag(language.getSimpleName());
+        if (language.getSimpleName().equals(otherLangView.getTag().toString())) {
+            swapButton.callOnClick();
+        } else {
+            currentLangView.setText(language.getName());
+            currentLangView.setTag(language.getSimpleName());
+            translate();
+        }
     }
 
 }

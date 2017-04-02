@@ -14,4 +14,7 @@
     <string name="areYouShure">Are you shure you want delete %s?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
+    <string name="noTranslations">There is no translations in %s</string>
+    <string name="connectionError">Connection error!</string>
+    <string name="delete">Delete</string>
 </resources>

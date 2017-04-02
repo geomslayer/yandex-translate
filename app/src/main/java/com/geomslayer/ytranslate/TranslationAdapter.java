@@ -14,8 +14,7 @@ import java.util.ArrayList;
 
 public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.ViewHolder> {
 
-    private final ItemClickListener itemListener;
-    private final FavoriteClickListener favListener;
+    private final AdapterListener listener;
 
     private ArrayList<Translation> dataset;
 
@@ -23,14 +22,17 @@ public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.
         return dataset;
     }
 
-    public TranslationAdapter(@NonNull FavoriteClickListener favListener,
-                              @NonNull ItemClickListener itemListener) {
-        this.favListener = favListener;
-        this.itemListener = itemListener;
+    public TranslationAdapter(@NonNull AdapterListener listener) {
+        this.listener = listener;
     }
 
     public void setDataset(ArrayList<Translation> dataset) {
         this.dataset = dataset;
+        notifyDataSetHasChanged();
+    }
+
+    public void notifyDataSetHasChanged() {
+        listener.changeNotificationVisibility(dataset.isEmpty());
         notifyDataSetChanged();
     }
 
@@ -38,7 +40,7 @@ public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_translation, parent, false);
-        return new ViewHolder(view, favListener, itemListener);
+        return new ViewHolder(view, listener);
     }
 
     @Override
@@ -58,8 +60,7 @@ public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.
         ImageView favorite;
         TextView languages;
 
-        public ViewHolder(View itemView, final FavoriteClickListener favListener,
-                          final ItemClickListener itemListener) {
+        public ViewHolder(View itemView, final AdapterListener listener) {
             super(itemView);
 
             rawText = (TextView) itemView.findViewById(R.id.rawText);
@@ -70,13 +71,20 @@ public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.
             favorite.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    favListener.onFavoriteClick(getAdapterPosition());
+                    listener.onFavoriteClick(getAdapterPosition());
                 }
             });
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    itemListener.onItemClick(getAdapterPosition());
+                    listener.onItemClick(getAdapterPosition());
+                }
+            });
+            itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View view) {
+                    listener.onItemLongClick(getAdapterPosition());
+                    return true;
                 }
             });
         }
@@ -94,12 +102,14 @@ public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.
 
     }
 
-    interface FavoriteClickListener {
+    interface AdapterListener {
         void onFavoriteClick(int position);
-    }
 
-    interface ItemClickListener {
         void onItemClick(int position);
+
+        void onItemLongClick(int position);
+
+        void changeNotificationVisibility(boolean visible);
     }
 
 }
