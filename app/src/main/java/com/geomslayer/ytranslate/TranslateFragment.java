@@ -1,5 +1,6 @@
 package com.geomslayer.ytranslate;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
@@ -18,7 +19,6 @@ import com.geomslayer.ytranslate.storage.Language;
 import com.geomslayer.ytranslate.storage.Translation;
 
 import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEvent;
-import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEventListener;
 import net.yslibrary.android.keyboardvisibilityevent.Unregistrar;
 
 import java.util.Calendar;
@@ -46,6 +46,7 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
     private Unregistrar unregistrar;
 
     private boolean errorConnection = false;
+    private RequestHandler requestHandler;
 
     public static TranslateFragment newInstance() {
         return new TranslateFragment();
@@ -55,6 +56,8 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View fragmentView = inflater.inflate(R.layout.fragment_translate, container, false);
+
+        requestHandler = new RequestHandler();
 
         toTranslate = (EditText) fragmentView.findViewById(R.id.translateEditText);
         translationView = (TextView) fragmentView.findViewById(R.id.translationTextView);
@@ -79,6 +82,12 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
         unregistrar.unregister();
     }
 
+    @Override
+    public void onStop() {
+        requestHandler.cancel(true);
+        super.onStop();
+    }
+
     private void prepareEditText() {
         toTranslate.setHorizontallyScrolling(false);
         toTranslate.setMaxLines(5);
@@ -92,18 +101,16 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
 
             @Override
             public void afterTextChanged(Editable text) {
-                translate();
+//                translate();
+                requestHandler.requestTranslation();
             }
         });
         unregistrar = KeyboardVisibilityEvent.registerEventListener(
                 getActivity(),
-                new KeyboardVisibilityEventListener() {
-                    @Override
-                    public void onVisibilityChanged(boolean isOpen) {
-                        saveInHistory();
-                        if (!isOpen) {
-                            toTranslate.clearFocus();
-                        }
+                isOpen -> {
+                    saveInHistory();
+                    if (!isOpen) {
+                        toTranslate.clearFocus();
                     }
                 });
     }
@@ -147,6 +154,7 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
         final Translation cur = getCurrentTranslation();
 
         if (cur.getRawText().isEmpty()) {
+            translationView.setText("");
             return;
         }
 
@@ -164,7 +172,7 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
                     @Override
                     public void onResponse(Call<Response> call, retrofit2.Response<Response> response) {
                         String lang = response.body().getLang();
-                        if (lang != null) {
+                        if (lang != null && !lang.isEmpty()) {
                             cur.setLangFrom(lang);
                             setSourceLanguage(lang);
                         }
@@ -188,8 +196,10 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
                     public void onResponse(Call<Response> call, retrofit2.Response<Response> response) {
                         hidePlaceholder();
                         StringBuilder stringBuilder = new StringBuilder();
-                        for (String str : response.body().getText()) {
-                            stringBuilder.append(str).append('\n');
+                        if (response.body() != null) {
+                            for (String str : response.body().getText()) {
+                                stringBuilder.append(str).append('\n');
+                            }
                         }
                         translation.setTranslation(stringBuilder.toString().trim());
                         updateFavoriteButton(checkForFavorites(translation));
@@ -290,53 +300,41 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
     }
 
     private void initListeners() {
-        favoriteButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Translation translation = saveInHistory();
-                if (translation != null) {
-                    getRealm().beginTransaction();
-                    translation.setInFavorites(!translation.isInFavorites());
-                    getRealm().commitTransaction();
-                    updateFavoriteButton(translation.isInFavorites());
-                }
+        favoriteButton.setOnClickListener(view -> {
+            Translation translation = saveInHistory();
+            if (translation != null) {
+                getRealm().beginTransaction();
+                translation.setInFavorites(!translation.isInFavorites());
+                getRealm().commitTransaction();
+                updateFavoriteButton(translation.isInFavorites());
             }
         });
-        clearButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                toTranslate.setText("");
-                translationView.setText("");
-                updateFavoriteButton(false);
-                TranslationUtils.saveInSharedPreferences(getActivity(), getCurrentTranslation());
-            }
+        clearButton.setOnClickListener(view -> {
+            toTranslate.setText("");
+            translationView.setText("");
+            updateFavoriteButton(false);
+            TranslationUtils.saveInSharedPreferences(getActivity(), getCurrentTranslation());
         });
-        swapButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                swapLanguages();
+        swapButton.setOnClickListener(view -> {
+            swapLanguages();
 
-                CharSequence text = translationView.getText();
-                translationView.setText(toTranslate.getText());
-                toTranslate.setText(text);
-            }
+            CharSequence text = translationView.getText();
+            translationView.setText(toTranslate.getText());
+            toTranslate.setText(text);
         });
-        View.OnClickListener languageClickListener = new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                int type;
-                String title;
-                if (view.getId() == R.id.leftLang) {
-                    type = FROM;
-                    title = getString(R.string.languageFrom);
-                } else {
-                    type = TO;
-                    title = getString(R.string.languageTo);
-                }
-                LanguageFragment fragment = LanguageFragment.newInstance(title, type);
-                fragment.setTargetFragment(TranslateFragment.this, 666);
-                fragment.show(getActivity().getSupportFragmentManager(), "dialog");
+        View.OnClickListener languageClickListener = view -> {
+            int type;
+            String title;
+            if (view.getId() == R.id.leftLang) {
+                type = FROM;
+                title = getString(R.string.languageFrom);
+            } else {
+                type = TO;
+                title = getString(R.string.languageTo);
             }
+            LanguageFragment fragment = LanguageFragment.newInstance(title, type);
+            fragment.setTargetFragment(TranslateFragment.this, 666);
+            fragment.show(getActivity().getSupportFragmentManager(), "dialog");
         };
         leftLanguage.setOnClickListener(languageClickListener);
         rightLanguage.setOnClickListener(languageClickListener);
@@ -382,6 +380,50 @@ public class TranslateFragment extends Fragment implements LanguageFragment.Lang
             currentLangView.setTag(language.getSimpleName());
             translate();
         }
+    }
+
+    private class RequestHandler extends AsyncTask<Void, Void, Void> {
+
+        private final static long DELAY = 350;
+        private final static long WAIT_TIME = 25;
+
+        volatile private boolean wasQuery = false;
+        volatile private long passedTime = 0;
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            while (true) {
+                if (isCancelled()) {
+                    break;
+                }
+
+                if (wasQuery && passedTime <= 0) {
+                    wasQuery = false;
+                    publishProgress();
+                }
+                try {
+                    Thread.sleep(WAIT_TIME);
+                } catch (InterruptedException e) {
+                    // fine
+                }
+                passedTime -= WAIT_TIME;
+            }
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {
+            translate();
+        }
+
+        protected void requestTranslation() {
+            if (this.getStatus() != Status.RUNNING) {
+                this.execute();
+            }
+            this.passedTime = DELAY;
+            wasQuery = true;
+        }
+
     }
 
 }

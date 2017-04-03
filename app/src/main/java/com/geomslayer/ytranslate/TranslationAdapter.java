@@ -68,24 +68,11 @@ public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.
             favorite = (ImageView) itemView.findViewById(R.id.favoriteButton);
             languages = (TextView) itemView.findViewById(R.id.languages);
 
-            favorite.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    listener.onFavoriteClick(getAdapterPosition());
-                }
-            });
-            itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    listener.onItemClick(getAdapterPosition());
-                }
-            });
-            itemView.setOnLongClickListener(new View.OnLongClickListener() {
-                @Override
-                public boolean onLongClick(View view) {
-                    listener.onItemLongClick(getAdapterPosition());
-                    return true;
-                }
+            favorite.setOnClickListener(view -> listener.onFavoriteClick(getAdapterPosition()));
+            itemView.setOnClickListener(view -> listener.onItemClick(getAdapterPosition()));
+            itemView.setOnLongClickListener(view -> {
+                listener.onItemLongClick(getAdapterPosition());
+                return true;
             });
         }
 

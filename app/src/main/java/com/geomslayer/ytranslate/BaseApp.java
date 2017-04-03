@@ -30,15 +30,12 @@ public class BaseApp extends Application {
         Realm.init(this);
         realm = Realm.getDefaultInstance();
 
-        realm.executeTransactionAsync(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                RealmResults<Translation> rubbish = realm.where(Translation.class)
-                        .equalTo(Translation.Field.inFavorites, false)
-                        .equalTo(Translation.Field.inHistory, false)
-                        .findAll();
-                rubbish.deleteAllFromRealm();
-            }
+        realm.executeTransactionAsync(realm -> {
+            RealmResults<Translation> rubbish = realm.where(Translation.class)
+                    .equalTo(Translation.Field.inFavorites, false)
+                    .equalTo(Translation.Field.inHistory, false)
+                    .findAll();
+            rubbish.deleteAllFromRealm();
         });
 
         Retrofit retrofit = new Retrofit.Builder()

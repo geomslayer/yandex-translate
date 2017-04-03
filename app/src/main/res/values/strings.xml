@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">YTranslate</string>
+    <string name="app_name">HSE Translate</string>
     <string name="translate">Translate</string>
     <string name="addToFavorites">Add to favorites</string>
     <string name="favorites">Favorites</string>

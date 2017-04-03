@@ -2,7 +2,6 @@ package com.geomslayer.ytranslate;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
@@ -29,12 +28,9 @@ public class AlertFragment extends DialogFragment {
         builder.setTitle(title);
         String mask = getString(R.string.areYouShure);
         builder.setMessage(String.format(mask, title.toLowerCase()));
-        builder.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                DialogListener listener = (DialogListener) getTargetFragment();
-                listener.onPositiveButtonClick();
-            }
+        builder.setPositiveButton(R.string.yes, (dialog, which) -> {
+            DialogListener listener = (DialogListener) getTargetFragment();
+            listener.onPositiveButtonClick();
         });
         builder.setNegativeButton(R.string.no, null);
         return builder.create();

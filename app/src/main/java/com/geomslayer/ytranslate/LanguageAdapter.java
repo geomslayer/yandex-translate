@@ -55,12 +55,7 @@ public class LanguageAdapter extends RecyclerView.Adapter<LanguageAdapter.ViewHo
 
             text = (TextView) itemView.findViewById(R.id.content);
 
-            itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    listener.onClick(getAdapterPosition());
-                }
-            });
+            itemView.setOnClickListener(view -> listener.onClick(getAdapterPosition()));
         }
 
         public void bindLanguage(Language language) {

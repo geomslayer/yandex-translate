@@ -7,3 +7,11 @@
 /build
 /captures
 .externalNativeBuild
+
+*.apk
+*.jks
+*.log
+
+/bin
+/gen
+/out
