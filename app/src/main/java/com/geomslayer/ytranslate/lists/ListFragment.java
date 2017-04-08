@@ -23,6 +23,7 @@ import com.geomslayer.ytranslate.models.TranslationDao;
 import org.greenrobot.greendao.query.QueryBuilder;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 
@@ -145,6 +146,9 @@ public class ListFragment extends Fragment
     @Override
     public void onItemClick(int position) {
         Translation translation = adapter.getDataset().get(position);
+        translation.setMoment(Calendar.getInstance().getTime());
+        translation.setInHistory(true);
+        translationDao.update(translation);
         callback.showTranslation(translation);
     }
 

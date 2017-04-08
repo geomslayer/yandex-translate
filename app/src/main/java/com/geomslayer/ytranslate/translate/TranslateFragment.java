@@ -27,6 +27,8 @@ import net.yslibrary.android.keyboardvisibilityevent.Unregistrar;
 public class TranslateFragment extends MvpAppCompatFragment
         implements LanguageFragment.LanguageDialogListener, TranslateView {
 
+    private static final String TAG = "TranslateFragment";
+
     @InjectPresenter
     TranslatePresenter presenter;
 
@@ -36,7 +38,8 @@ public class TranslateFragment extends MvpAppCompatFragment
         return new TranslatePresenter(session);
     }
 
-    boolean firstTime = true;
+    private static final int TIMES = 2;
+    int firstTimes = TIMES;
 
     private EditText toTranslate;
     private TextView translationView;
@@ -91,8 +94,8 @@ public class TranslateFragment extends MvpAppCompatFragment
 
             @Override
             public void afterTextChanged(Editable text) {
-                if (firstTime) {
-                    firstTime = false;
+                if (firstTimes > 0) {
+                    --firstTimes;
                     return;
                 }
                 presenter.translate();
@@ -203,8 +206,12 @@ public class TranslateFragment extends MvpAppCompatFragment
     public void setPlaceholderVisibility(boolean visible) {
         if (visible) {
             placeholder.setVisibility(View.VISIBLE);
+            translationView.setVisibility(View.GONE);
+            favoriteButton.setVisibility(View.GONE);
         } else {
             placeholder.setVisibility(View.GONE);
+            translationView.setVisibility(View.VISIBLE);
+            favoriteButton.setVisibility(View.VISIBLE);
         }
     }
 
@@ -220,5 +227,9 @@ public class TranslateFragment extends MvpAppCompatFragment
                 language.getCode(), type);
     }
 
+    public void showLastInHistory() {
+        firstTimes = TIMES;
+        presenter.showLastInHistory();
+    }
 
 }

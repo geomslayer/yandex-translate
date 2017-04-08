@@ -4,10 +4,15 @@ import android.app.Application;
 
 import com.geomslayer.ytranslate.models.DaoMaster;
 import com.geomslayer.ytranslate.models.DaoSession;
+import com.geomslayer.ytranslate.models.Language;
+import com.geomslayer.ytranslate.models.LanguageDao;
 import com.geomslayer.ytranslate.models.Translation;
 import com.geomslayer.ytranslate.models.TranslationDao;
 import com.geomslayer.ytranslate.network.TranslateApi;
-import com.geomslayer.ytranslate.utils.Utils;
+import com.geomslayer.ytranslate.utils.UploadService;
+import com.google.android.gms.gcm.GcmNetworkManager;
+import com.google.android.gms.gcm.OneoffTask;
+import com.google.android.gms.gcm.Task;
 
 import java.util.List;
 
@@ -41,13 +46,30 @@ public class BaseApp extends Application {
         DaoMaster.DevOpenHelper helper = new DaoMaster.DevOpenHelper(this, "translations-db");
         daoSession = new DaoMaster(helper.getWritableDb()).newSession();
 
-        List<Translation> toDelete = daoSession.getTranslationDao().queryBuilder()
+        LanguageDao languageDao = daoSession.getLanguageDao();
+        TranslationDao translationDao = daoSession.getTranslationDao();
+
+        List<Translation> toDelete = translationDao.queryBuilder()
                 .where(TranslationDao.Properties.InHistory.eq(false))
                 .where(TranslationDao.Properties.InFavorites.eq(false))
                 .list();
-        daoSession.getTranslationDao().deleteInTx(toDelete);
+        translationDao.deleteInTx(toDelete);
 
-        Utils.loadLanguages(daoSession.getLanguageDao());
+        if (languageDao.count() == 0) {
+            languageDao.insert(new Language("ru", "Russian"));
+            languageDao.insert(new Language("en", "English"));
+        }
+
+        OneoffTask languagesUploadTask = new OneoffTask.Builder()
+                .setService(UploadService.class)
+                .setTag("UploadLanguagesTask")
+                .setExecutionWindow(0, 60)
+                .setRequiredNetwork(Task.NETWORK_STATE_UNMETERED)
+                .setRequiresCharging(false)
+                .build();
+
+        GcmNetworkManager manager = GcmNetworkManager.getInstance(this);
+        manager.schedule(languagesUploadTask);
     }
 
 }

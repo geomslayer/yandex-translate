@@ -35,9 +35,6 @@ public class RequestHandler extends AsyncTask<Void, Void, Void> {
                 // fine
             }
             passedTime -= WAIT_TIME;
-//            if (passedTime % 1000 == 0) {
-//                Log.d("AsyncTask", "doInBackground: executing!");
-//            }
         }
         return null;
     }
@@ -54,7 +51,6 @@ public class RequestHandler extends AsyncTask<Void, Void, Void> {
         this.passedTime = DELAY;
         if (!wasQuery) {
             ++requestsCount;
-            Log.d("Handler", "request count increased " + requestsCount);
         }
         wasQuery = true;
     }
@@ -65,7 +61,6 @@ public class RequestHandler extends AsyncTask<Void, Void, Void> {
 
     public void onCompleteRequest() {
         requestsCount = Math.max(0, requestsCount - 1);
-        Log.d("Handler", "request count decreased " + requestsCount);
     }
 
     public interface OnRequestReadyListener {

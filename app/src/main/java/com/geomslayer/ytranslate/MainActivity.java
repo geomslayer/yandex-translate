@@ -83,7 +83,10 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void showTranslation(Translation translation) {
-        navigation.setSelectedItemId(R.id.nav_home);    // TODO
+        TranslateFragment homeFrag = (TranslateFragment)
+                getSupportFragmentManager().findFragmentByTag(HOME_TAG);
+        homeFrag.showLastInHistory();
+        navigation.setSelectedItemId(R.id.nav_home);
     }
 
 }
