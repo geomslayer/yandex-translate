@@ -1,4 +1,4 @@
-package com.geomslayer.ytranslate;
+package com.geomslayer.ytranslate.lists;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -14,14 +14,17 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.geomslayer.ytranslate.storage.Translation;
+import com.geomslayer.ytranslate.BaseApp;
+import com.geomslayer.ytranslate.R;
+import com.geomslayer.ytranslate.models.DaoSession;
+import com.geomslayer.ytranslate.models.Translation;
+import com.geomslayer.ytranslate.models.TranslationDao;
+
+import org.greenrobot.greendao.query.QueryBuilder;
 
 import java.util.ArrayList;
+import java.util.List;
 
-import io.realm.RealmResults;
-import io.realm.Sort;
-
-import static com.geomslayer.ytranslate.BaseApp.getRealm;
 
 public class ListFragment extends Fragment
         implements AlertFragment.DialogListener,
@@ -37,6 +40,8 @@ public class ListFragment extends Fragment
     private ViewGroup placeholderView;
 
     private Callback callback;
+
+    private TranslationDao translationDao;
 
     public static ListFragment newInstance(int type) {
         ListFragment fragment = new ListFragment();
@@ -61,6 +66,9 @@ public class ListFragment extends Fragment
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View fragmentView = inflater.inflate(R.layout.fragment_lists, container, false);
+
+        DaoSession session = ((BaseApp) getActivity().getApplication()).getDaoSession();
+        translationDao = session.getTranslationDao();
 
         toolbar = (Toolbar) fragmentView.findViewById(R.id.toolbar);
         recycler = (RecyclerView) fragmentView.findViewById(R.id.recyclerView);
@@ -88,18 +96,14 @@ public class ListFragment extends Fragment
     }
 
     private void initRecyclerView() {
-        RealmResults<Translation> entries;
-        ArrayList<Translation> dataset = new ArrayList<>();
+        QueryBuilder<Translation> query = translationDao.queryBuilder();
         if (getArguments().getInt(TYPE) == HISTORY) {
-            entries = getRealm().where(Translation.class)
-                    .equalTo(Translation.Field.inHistory, true)
-                    .findAllSorted(Translation.Field.moment, Sort.DESCENDING);
+            query.where(TranslationDao.Properties.InHistory.eq(true));
         } else {
-            entries = getRealm().where(Translation.class)
-                    .equalTo(Translation.Field.inFavorites, true)
-                    .findAllSorted(Translation.Field.moment, Sort.DESCENDING);
+            query.where(TranslationDao.Properties.InFavorites.eq(true));
         }
-        dataset.addAll(entries);
+        List<Translation> entries = query.orderDesc(TranslationDao.Properties.Moment).list();
+        ArrayList<Translation> dataset = new ArrayList<>(entries);
 
         adapter = new TranslationAdapter(this);
         adapter.setDataset(dataset);
@@ -132,10 +136,9 @@ public class ListFragment extends Fragment
 
     @Override
     public void onFavoriteClick(int position) {
-        getRealm().beginTransaction();
         Translation translation = adapter.getDataset().get(position);
         translation.setInFavorites(!translation.isInFavorites());
-        getRealm().commitTransaction();
+        translationDao.update(translation);
         adapter.notifyItemChanged(position);
     }
 
@@ -150,13 +153,13 @@ public class ListFragment extends Fragment
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setItems(new String[]{getString(R.string.delete)}, (dialog, which) -> {
             final int type = getArguments().getInt(TYPE);
-            getRealm().beginTransaction();
+            Translation translation = adapter.getDataset().get(position);
             if (type == HISTORY) {
-                adapter.getDataset().get(position).setInHistory(false);
+                translation.setInHistory(false);
             } else {
-                adapter.getDataset().get(position).setInFavorites(false);
+                translation.setInFavorites(false);
             }
-            getRealm().commitTransaction();
+            translationDao.update(translation);
             adapter.getDataset().remove(position);
             if (adapter.getDataset().isEmpty()) {
                 adapter.notifyDataSetHasChanged();
@@ -168,25 +171,21 @@ public class ListFragment extends Fragment
     }
 
     @Override
-    public void changeNotificationVisibility(boolean visible) {
+    public void setPlaceholderVisibility(boolean visible) {
         placeholderView.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
     @Override
     public void onPositiveButtonClick() {
         final int type = getArguments().getInt(TYPE);
-        getRealm().beginTransaction();
         for (Translation translation : adapter.getDataset()) {
             if (type == HISTORY) {
                 translation.setInHistory(false);
             } else {
                 translation.setInFavorites(false);
             }
-            if (!translation.isInFavorites() && !translation.isInHistory()) {
-                translation.deleteFromRealm();
-            }
+            translationDao.update(translation);
         }
-        getRealm().commitTransaction();
         adapter.getDataset().clear();
         adapter.notifyDataSetHasChanged();
     }

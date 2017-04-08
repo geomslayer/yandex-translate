@@ -1,4 +1,4 @@
-package com.geomslayer.ytranslate;
+package com.geomslayer.ytranslate.lists;
 
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
@@ -8,7 +8,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.geomslayer.ytranslate.storage.Translation;
+import com.geomslayer.ytranslate.R;
+import com.geomslayer.ytranslate.models.Translation;
 
 import java.util.ArrayList;
 
@@ -32,7 +33,7 @@ public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.
     }
 
     public void notifyDataSetHasChanged() {
-        listener.changeNotificationVisibility(dataset.isEmpty());
+        listener.setPlaceholderVisibility(dataset.isEmpty());
         notifyDataSetChanged();
     }
 
@@ -64,7 +65,7 @@ public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.
             super(itemView);
 
             rawText = (TextView) itemView.findViewById(R.id.rawText);
-            translationTextView = (TextView) itemView.findViewById(R.id.translation);
+            translationTextView = (TextView) itemView.findViewById(R.id.translatedText);
             favorite = (ImageView) itemView.findViewById(R.id.favoriteButton);
             languages = (TextView) itemView.findViewById(R.id.languages);
 
@@ -77,9 +78,11 @@ public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.
         }
 
         public void bindTranslation(Translation translation) {
-            rawText.setText(translation.getRawText());
-            translationTextView.setText(translation.getTranslation());
-            languages.setText(translation.getLangFrom() + " - " + translation.getLangTo());
+            rawText.setText(translation.getSourceText());
+            translationTextView.setText(translation.getTranslatedText());
+            languages.setText(String.format("%s - %s",
+                    translation.getSourceCode(),
+                    translation.getTargetCode()));
             if (translation.isInFavorites()) {
                 favorite.setImageResource(R.drawable.ic_favorite_active);
             } else {
@@ -96,7 +99,7 @@ public class TranslationAdapter extends RecyclerView.Adapter<TranslationAdapter.
 
         void onItemLongClick(int position);
 
-        void changeNotificationVisibility(boolean visible);
+        void setPlaceholderVisibility(boolean visible);
     }
 
 }

@@ -10,7 +10,7 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="languageFrom">Language of text</string>
-    <string name="languageTo">Language of translation</string>
+    <string name="languageTo">Language of translatedText</string>
     <string name="areYouShure">Are you shure you want delete %s?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>

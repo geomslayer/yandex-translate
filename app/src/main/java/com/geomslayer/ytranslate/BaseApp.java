@@ -2,47 +2,52 @@ package com.geomslayer.ytranslate;
 
 import android.app.Application;
 
+import com.geomslayer.ytranslate.models.DaoMaster;
+import com.geomslayer.ytranslate.models.DaoSession;
+import com.geomslayer.ytranslate.models.Translation;
+import com.geomslayer.ytranslate.models.TranslationDao;
 import com.geomslayer.ytranslate.network.TranslateApi;
-import com.geomslayer.ytranslate.storage.Translation;
+import com.geomslayer.ytranslate.utils.Utils;
 
-import io.realm.Realm;
-import io.realm.RealmResults;
+import java.util.List;
+
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class BaseApp extends Application {
 
     private static TranslateApi translateApi;
-    private static Realm realm;     // TODO change
 
     public static TranslateApi getApi() {
         return translateApi;
     }
 
-    public static Realm getRealm() {
-        return realm;
+    private DaoSession daoSession;
+
+    public DaoSession getDaoSession() {
+        return daoSession;
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
 
-        Realm.init(this);
-        realm = Realm.getDefaultInstance();
-
-        realm.executeTransactionAsync(realm -> {
-            RealmResults<Translation> rubbish = realm.where(Translation.class)
-                    .equalTo(Translation.Field.inFavorites, false)
-                    .equalTo(Translation.Field.inHistory, false)
-                    .findAll();
-            rubbish.deleteAllFromRealm();
-        });
-
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(TranslateApi.BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         translateApi = retrofit.create(TranslateApi.class);
+
+        DaoMaster.DevOpenHelper helper = new DaoMaster.DevOpenHelper(this, "translations-db");
+        daoSession = new DaoMaster(helper.getWritableDb()).newSession();
+
+        List<Translation> toDelete = daoSession.getTranslationDao().queryBuilder()
+                .where(TranslationDao.Properties.InHistory.eq(false))
+                .where(TranslationDao.Properties.InFavorites.eq(false))
+                .list();
+        daoSession.getTranslationDao().deleteInTx(toDelete);
+
+        Utils.loadLanguages(daoSession.getLanguageDao());
     }
 
 }

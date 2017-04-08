@@ -1,10 +1,12 @@
-package com.geomslayer.ytranslate;
+package com.geomslayer.ytranslate.lists;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
+
+import com.geomslayer.ytranslate.R;
 
 public class AlertFragment extends DialogFragment {
 

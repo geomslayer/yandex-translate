@@ -1,8 +1,7 @@
-package com.geomslayer.ytranslate;
+package com.geomslayer.ytranslate.translate;
 
 
 import android.os.Bundle;
-import android.support.v4.app.DialogFragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -10,17 +9,32 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.geomslayer.ytranslate.storage.Language;
+import com.arellomobile.mvp.MvpAppCompatDialogFragment;
+import com.arellomobile.mvp.presenter.InjectPresenter;
+import com.arellomobile.mvp.presenter.ProvidePresenter;
+import com.geomslayer.ytranslate.BaseApp;
+import com.geomslayer.ytranslate.R;
+import com.geomslayer.ytranslate.models.DaoSession;
+import com.geomslayer.ytranslate.models.Language;
 
 import java.util.ArrayList;
 
-import io.realm.RealmResults;
-
-public class LanguageFragment extends DialogFragment
-        implements LanguageAdapter.OnItemClickListener {
+public class LanguageFragment extends MvpAppCompatDialogFragment
+        implements DialogView, LanguageAdapter.OnItemClickListener {
 
     private static final String TITLE = "title";
     private static final String TYPE = "type";
+
+    @InjectPresenter
+    DialogPresenter presenter;
+
+    @ProvidePresenter
+    DialogPresenter providePresenter() {
+        DaoSession session = ((BaseApp) getActivity().getApplication()).getDaoSession();
+        return new DialogPresenter(session);
+    }
+
+    LanguageDialogListener parent;
 
     RecyclerView recyclerView;
     LanguageAdapter adapter;
@@ -51,6 +65,8 @@ public class LanguageFragment extends DialogFragment
                              Bundle savedInstanceState) {
         View fragmentView = inflater.inflate(R.layout.fragment_language, container, false);
 
+        parent = (LanguageDialogListener) getTargetFragment();
+
         recyclerView = (RecyclerView) fragmentView.findViewById(R.id.recyclerView);
         title = (TextView) fragmentView.findViewById(R.id.title);
 
@@ -61,17 +77,10 @@ public class LanguageFragment extends DialogFragment
     }
 
     private void initRecyclerView() {
-        RealmResults<Language> entries;
-        ArrayList<Language> dataset = new ArrayList<>();
-        entries = BaseApp.getRealm().where(Language.class)
-                .findAllSorted(Language.Field.name);
-        for (Language entry : entries) {
-            dataset.add(entry);
-        }
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         adapter = new LanguageAdapter(this);
-        adapter.setDataset(dataset);
         recyclerView.setAdapter(adapter);
+        presenter.fetchLanguages();
     }
 
     @Override
@@ -80,6 +89,17 @@ public class LanguageFragment extends DialogFragment
         int type = getArguments().getInt(TYPE);
         listener.onLanguageSelected(adapter.getDataset().get(position), type);
         dismiss();
+    }
+
+    @Override
+    public void showLanguages(ArrayList<Language> langs) {
+        adapter.setDataset(langs);
+        adapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void showError() {
+
     }
 
     public interface LanguageDialogListener {

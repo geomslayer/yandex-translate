@@ -1,16 +1,20 @@
 buildscript {
     repositories {
         jcenter()
+        mavenCentral()
     }
     dependencies {
-        classpath "io.realm:realm-gradle-plugin:3.0.0"
+        // GreenDAO
+        classpath 'org.greenrobot:greendao-gradle-plugin:3.2.2'
+
+        // Retrolambda
         classpath 'me.tatarka:gradle-retrolambda:3.6.0'
     }
 }
 
 apply plugin: 'com.android.application'
-apply plugin: 'realm-android'
 apply plugin: 'me.tatarka.retrolambda'
+apply plugin: 'org.greenrobot.greendao'
 
 android {
     compileSdkVersion 25
@@ -27,9 +31,9 @@ android {
     signingConfigs {
         release {
             keyAlias 'key_alias'
-            keyPassword 'Pp098765'
+            keyPassword '****'
             storeFile file('../certificate/key.jks')
-            storePassword 'Pp098765'
+            storePassword '****'
         }
     }
     buildTypes {
@@ -55,6 +59,10 @@ retrolambda {
     javaVersion JavaVersion.VERSION_1_7
 }
 
+greendao {
+    schemaVersion = 3
+}
+
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
@@ -65,8 +73,21 @@ dependencies {
     compile 'com.android.support:support-v4:25.3.1'
     compile 'com.android.support:design:25.3.1'
     compile 'com.android.support:support-vector-drawable:25.3.1'
+
+    // retrofit
     compile 'com.squareup.retrofit2:retrofit:2.1.0'
     compile 'com.squareup.retrofit2:converter-gson:2.1.0'
+
+    // Keyboard visibility library
     compile 'net.yslibrary.keyboardvisibilityevent:keyboardvisibilityevent:2.1.0'
+
+    // Moxy
+    compile 'com.arello-mobile:moxy:1.4.6'
+    compile 'com.arello-mobile:moxy-app-compat:1.4.6'
+    provided 'com.arello-mobile:moxy-compiler:1.4.6'
+
+    // GreenDao
+    compile 'org.greenrobot:greendao:3.2.2'
+
     testCompile 'junit:junit:4.12'
 }

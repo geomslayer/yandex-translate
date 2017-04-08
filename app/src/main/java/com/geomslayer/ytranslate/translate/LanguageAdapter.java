@@ -1,4 +1,4 @@
-package com.geomslayer.ytranslate;
+package com.geomslayer.ytranslate.translate;
 
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
@@ -7,7 +7,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.geomslayer.ytranslate.storage.Language;
+import com.geomslayer.ytranslate.R;
+import com.geomslayer.ytranslate.models.Language;
 
 import java.util.ArrayList;
 
