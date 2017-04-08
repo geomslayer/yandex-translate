@@ -1,5 +1,6 @@
 package com.geomslayer.ytranslate.translate;
 
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.text.Editable;
@@ -83,8 +84,12 @@ public class TranslateFragment extends MvpAppCompatFragment
 
     private void prepareEditText() {
         toTranslate.setHorizontallyScrolling(false);
-        toTranslate.setMaxLines(5);
-        toTranslate.setLines(5);
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            toTranslate.setMaxLines(5);
+            toTranslate.setLines(5);
+        } else {
+            toTranslate.setMaxLines(256);
+        }
         toTranslate.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence text, int i, int i1, int i2) {}
