@@ -9,25 +9,34 @@
     android:paddingLeft="24dp"
     android:paddingRight="24dp"
     android:paddingStart="24dp"
-    android:paddingTop="20dp"
+    android:paddingTop="10dp"
     tools:context="com.geomslayer.ytranslate.translate.LanguageFragment">
 
-    <TextView
-        android:id="@+id/title"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="?android:textColorPrimary"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        tools:text="Choose language to"/>
+        android:orientation="horizontal">
 
-    <EditText
-        android:id="@+id/search"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="@string/search"
-        android:imeOptions="actionDone"
-        android:inputType="textCapSentences"/>
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="?android:textColorPrimary"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            tools:text="Choose language to"/>
+
+        <EditText
+            android:id="@+id/search"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="@string/search"
+            android:imeOptions="actionDone"
+            android:inputType="textCapSentences"/>
+
+    </LinearLayout>
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/recyclerView"

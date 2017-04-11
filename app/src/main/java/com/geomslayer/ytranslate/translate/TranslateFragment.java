@@ -121,10 +121,8 @@ public class TranslateFragment extends MvpAppCompatFragment
     private void initListeners() {
         favoriteButton.setOnClickListener(view -> presenter.onFavoriteButtonPressed());
         clearButton.setOnClickListener(view -> presenter.onClearButtonPressed());
-        swapButton.setOnClickListener(view -> {
-            String[] languages = new String[]{getLanguage(SOURCE), getLanguage(TARGET)};
-            presenter.onSwapButtonPressed(languages);
-        });
+        swapButton.setOnClickListener(view ->
+                presenter.onSwapButtonPressed(getCapture(), getTranslatedText()));
         languageViews[SOURCE].setOnClickListener(view -> showDialog(SOURCE));
         languageViews[TARGET].setOnClickListener(view -> showDialog(TARGET));
     }
@@ -132,9 +130,9 @@ public class TranslateFragment extends MvpAppCompatFragment
     public void showDialog(final int type) {
         final String title;
         if (type == SOURCE) {
-            title = getString(R.string.languageFrom);
+            title = getString(R.string.sourceLanguage);
         } else {
-            title = getString(R.string.languageTo);
+            title = getString(R.string.targetLanguage);
         }
         LanguageFragment dialog = LanguageFragment.newInstance(title, type);
         dialog.setTargetFragment(this, 666);
@@ -166,9 +164,18 @@ public class TranslateFragment extends MvpAppCompatFragment
         return toTranslate.getText().toString().trim();
     }
 
+    private String getTranslatedText() {
+        return translationView.getText().toString().trim();
+    }
+
     @Override
     public void setSourceText(String text) {
         toTranslate.setText(text);
+    }
+
+    @Override
+    public void setTranslatedText(String text) {
+        translationView.setText(text);
     }
 
     private Capture getCapture() {

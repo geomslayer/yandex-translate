@@ -11,6 +11,4 @@ import java.util.ArrayList;
 interface DialogView extends MvpView {
 
     void showLanguages(ArrayList<Language> languages);
-
-    void showError();
 }

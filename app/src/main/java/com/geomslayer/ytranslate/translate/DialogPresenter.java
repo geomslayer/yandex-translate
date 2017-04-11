@@ -50,11 +50,18 @@ public class DialogPresenter extends MvpPresenter<DialogView> {
                         }
 
                         @Override
-                        public void onFailure(Call<LangCollection> call, Throwable t) {
-                            getViewState().showError();
-                        }
+                        public void onFailure(Call<LangCollection> call, Throwable t) {}
                     });
         }
+    }
+
+    void filterLanguages(String query) {
+        query = "%" + query.trim() + "%";
+        List<Language> entries = languageDao.queryBuilder()
+                .where(LanguageDao.Properties.Name.like(query))
+                .orderAsc(LanguageDao.Properties.Name)
+                .list();
+        getViewState().showLanguages(new ArrayList<>(entries));
     }
 
 }

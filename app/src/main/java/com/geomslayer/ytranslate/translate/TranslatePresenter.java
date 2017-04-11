@@ -189,20 +189,22 @@ public class TranslatePresenter extends MvpPresenter<TranslateView>
         getViewState().clearScreen();
     }
 
-    void onSwapButtonPressed(String[] languages) {
+    void onSwapButtonPressed(Capture capture, String translated) {
         wasRequestSave = true;
-        Language source = findLanguage(languages[TranslateFragment.SOURCE]);
-        Language target = findLanguage(languages[TranslateFragment.TARGET]);
+        Language source = findLanguage(capture.getSource());
+        Language target = findLanguage(capture.getTarget());
         getViewState().setSourceLanguage(target);
         getViewState().setTargetLanguage(source);
-        getViewState().setSourceText(lastTranslation.getTranslatedText());
+        getViewState().setTranslatedText(capture.getText());
+        getViewState().setSourceText(translated);
     }
 
     void onLanguageSelected(String languages[], String updated, final int type) {
         final int other = type ^ 1;
         if (!languages[type].equals(updated)) {
             if (languages[other].equals(updated)) {
-                onSwapButtonPressed(languages);
+                Capture capture = new Capture(lastTranslation.getSourceText(), languages[0], languages[1]);
+                onSwapButtonPressed(capture, lastTranslation.getTranslatedText());
             } else {
                 Language lang = findLanguage(updated);
                 if (type == TranslateFragment.TARGET) {

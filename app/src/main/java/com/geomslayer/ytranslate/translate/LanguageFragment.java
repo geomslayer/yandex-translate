@@ -4,9 +4,12 @@ package com.geomslayer.ytranslate.translate;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import com.arellomobile.mvp.MvpAppCompatDialogFragment;
@@ -39,6 +42,7 @@ public class LanguageFragment extends MvpAppCompatDialogFragment
     RecyclerView recyclerView;
     LanguageAdapter adapter;
     TextView title;
+    EditText searchField;
 
     public static LanguageFragment newInstance(String title, int type) {
         Bundle args = new Bundle();
@@ -69,11 +73,28 @@ public class LanguageFragment extends MvpAppCompatDialogFragment
 
         recyclerView = (RecyclerView) fragmentView.findViewById(R.id.recyclerView);
         title = (TextView) fragmentView.findViewById(R.id.title);
+        searchField = (EditText) fragmentView.findViewById(R.id.search);
 
         title.setText(getArguments().getString(TITLE));
         initRecyclerView();
+        initSearchBar();
 
         return fragmentView;
+    }
+
+    private void initSearchBar() {
+        searchField.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                presenter.filterLanguages(editable.toString());
+            }
+        });
     }
 
     private void initRecyclerView() {
@@ -95,11 +116,6 @@ public class LanguageFragment extends MvpAppCompatDialogFragment
     public void showLanguages(ArrayList<Language> langs) {
         adapter.setDataset(langs);
         adapter.notifyDataSetChanged();
-    }
-
-    @Override
-    public void showError() {
-
     }
 
     public interface LanguageDialogListener {

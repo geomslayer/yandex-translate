@@ -17,6 +17,8 @@ interface TranslateView extends MvpView {
 
     void setSourceText(String text);
 
+    void setTranslatedText(String text);
+
     void updateFavoriteIcon(boolean active);
 
     @StateStrategyType(SingleStateStrategy.class)
