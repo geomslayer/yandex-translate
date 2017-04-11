@@ -3,6 +3,7 @@ package com.geomslayer.ytranslate.translate;
 import com.arellomobile.mvp.InjectViewState;
 import com.arellomobile.mvp.MvpPresenter;
 import com.geomslayer.ytranslate.BaseApp;
+import com.geomslayer.ytranslate.RequestHandler;
 import com.geomslayer.ytranslate.models.Capture;
 import com.geomslayer.ytranslate.models.DaoSession;
 import com.geomslayer.ytranslate.models.Language;
@@ -45,23 +46,30 @@ public class TranslatePresenter extends MvpPresenter<TranslateView>
             lastTranslation.setTranslatedText("");
             lastTranslation.setSource(new Language("ru", "Russian"));
             lastTranslation.setTarget(new Language("en", "English"));
+            getViewState().setSourceLanguage(lastTranslation.getSource());
+            getViewState().setTargetLanguage(lastTranslation.getTarget());
+        } else {
+            getViewState().setTranslation(lastTranslation);
         }
-        getViewState().setTranslation(lastTranslation);
     }
 
     void translate() {
         if (requestHandler.isCancelled()) {
             requestHandler = new RequestHandler(this);
         }
-        requestHandler.requestTranslation();
+        requestHandler.doFakeRequest();
     }
 
     @Override
-    public void getTranslation() {
+    public void doRealRequest() {
         getViewState().requestData();
     }
 
     void translateNow(Capture capture) {
+        if (!BaseApp.isLanguagesReceived()) {
+            BaseApp.loadLanguages(languageDao);
+            return;
+        }
         BaseApp.getApi()
                 .detectLanguage(capture.getText(), capture.getSource())
                 .enqueue(new Callback<Response>() {
@@ -115,7 +123,10 @@ public class TranslatePresenter extends MvpPresenter<TranslateView>
                         lastTranslation.setSourceCode(capture.getSource());
                         lastTranslation.setTargetCode(capture.getTarget());
                         translationDao.insert(lastTranslation);
-                        onTranslationReceived();
+
+                        if (lastTranslation.getSource() != null && lastTranslation.getTarget() != null) {
+                            onTranslationReceived();
+                        }
                     }
 
                     @Override
@@ -182,8 +193,8 @@ public class TranslatePresenter extends MvpPresenter<TranslateView>
         wasRequestSave = true;
         Language source = findLanguage(languages[TranslateFragment.SOURCE]);
         Language target = findLanguage(languages[TranslateFragment.TARGET]);
-        getViewState().setLanguage(target, TranslateFragment.SOURCE);
-        getViewState().setLanguage(source, TranslateFragment.TARGET);
+        getViewState().setSourceLanguage(target);
+        getViewState().setTargetLanguage(source);
         getViewState().setSourceText(lastTranslation.getTranslatedText());
     }
 
@@ -194,10 +205,12 @@ public class TranslatePresenter extends MvpPresenter<TranslateView>
                 onSwapButtonPressed(languages);
             } else {
                 Language lang = findLanguage(updated);
-                getViewState().setLanguage(lang, type);
                 if (type == TranslateFragment.TARGET) {
                     wasRequestSave = true;
+                    getViewState().setTargetLanguage(lang);
                     getViewState().requestData();
+                } else {
+                    getViewState().setSourceLanguage(lang);
                 }
             }
         }

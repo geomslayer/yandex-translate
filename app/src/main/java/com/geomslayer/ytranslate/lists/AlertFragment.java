@@ -28,7 +28,7 @@ public class AlertFragment extends DialogFragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         String title = getArguments().getString(TITLE);
         builder.setTitle(title);
-        String mask = getString(R.string.areYouShure);
+        String mask = getString(R.string.areYouSure);
         builder.setMessage(String.format(mask, title.toLowerCase()));
         builder.setPositiveButton(R.string.yes, (dialog, which) -> {
             DialogListener listener = (DialogListener) getTargetFragment();

@@ -31,9 +31,9 @@ android {
     signingConfigs {
         release {
             keyAlias 'key_alias'
-            keyPassword '****'
+            keyPassword 'Pp098765'
             storeFile file('../certificate/key.jks')
-            storePassword '****'
+            storePassword 'Pp098765'
         }
     }
     buildTypes {
@@ -73,7 +73,6 @@ dependencies {
     compile 'com.android.support:support-v4:25.3.1'
     compile 'com.android.support:design:25.3.1'
     compile 'com.android.support:support-vector-drawable:25.3.1'
-    compile 'com.google.android.gms:play-services-gcm:10.2.1'
     // retrofit
     compile 'com.squareup.retrofit2:retrofit:2.1.0'
     compile 'com.squareup.retrofit2:converter-gson:2.1.0'
@@ -89,5 +88,11 @@ dependencies {
     // GreenDao
     compile 'org.greenrobot:greendao:3.2.2'
 
+    // RxJava/Android
+    compile 'io.reactivex.rxjava2:rxandroid:2.0.1'
+    compile 'io.reactivex.rxjava2:rxjava:2.0.1'
+    compile 'com.jakewharton.rxbinding2:rxbinding:2.0.0'
+
     testCompile 'junit:junit:4.12'
+    compile 'com.android.support:cardview-v7:25.3.1'
 }

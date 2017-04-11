@@ -90,6 +90,7 @@ public class TranslateFragment extends MvpAppCompatFragment
         } else {
             toTranslate.setMaxLines(256);
         }
+
         toTranslate.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence text, int i, int i1, int i2) {}
@@ -106,6 +107,7 @@ public class TranslateFragment extends MvpAppCompatFragment
                 presenter.translate();
             }
         });
+
         unregistrar = KeyboardVisibilityEvent.registerEventListener(
                 getActivity(),
                 isOpen -> {
@@ -192,8 +194,8 @@ public class TranslateFragment extends MvpAppCompatFragment
 
     @Override
     public void updateTranslation(Translation translation) {
-        setLanguage(translation.getSource(), SOURCE);
-        setLanguage(translation.getTarget(), TARGET);
+        setSourceLanguage(translation.getSource());
+        setTargetLanguage(translation.getTarget());
         translationView.setText(translation.getTranslatedText());
         updateFavoriteIcon(translation.isInFavorites());
     }
@@ -221,9 +223,15 @@ public class TranslateFragment extends MvpAppCompatFragment
     }
 
     @Override
-    public void setLanguage(Language lang, final int type) {
-        languageViews[type].setTag(lang.getCode());
-        languageViews[type].setText(lang.getName());
+    public void setSourceLanguage(Language language) {
+        languageViews[SOURCE].setTag(language.getCode());
+        languageViews[SOURCE].setText(language.getName());
+    }
+
+    @Override
+    public void setTargetLanguage(Language language) {
+        languageViews[TARGET].setTag(language.getCode());
+        languageViews[TARGET].setText(language.getName());
     }
 
     @Override

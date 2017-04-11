@@ -1,7 +1,6 @@
-package com.geomslayer.ytranslate.translate;
+package com.geomslayer.ytranslate;
 
 import android.os.AsyncTask;
-import android.util.Log;
 
 public class RequestHandler extends AsyncTask<Void, Void, Void> {
 
@@ -41,10 +40,10 @@ public class RequestHandler extends AsyncTask<Void, Void, Void> {
 
     @Override
     protected void onProgressUpdate(Void... values) {
-        listener.getTranslation();
+        listener.doRealRequest();
     }
 
-    public void requestTranslation() {
+    public void doFakeRequest() {
         if (this.getStatus() != AsyncTask.Status.RUNNING) {
             this.execute();
         }
@@ -64,7 +63,7 @@ public class RequestHandler extends AsyncTask<Void, Void, Void> {
     }
 
     public interface OnRequestReadyListener {
-        void getTranslation();
+        void doRealRequest();
     }
 
 }

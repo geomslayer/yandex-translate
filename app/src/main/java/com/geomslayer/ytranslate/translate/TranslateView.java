@@ -13,10 +13,11 @@ interface TranslateView extends MvpView {
 
     void requestData();
 
-    @StateStrategyType(AddToEndSingleStrategy.class)
     void clearScreen();
 
     void setSourceText(String text);
+
+    void updateFavoriteIcon(boolean active);
 
     @StateStrategyType(SingleStateStrategy.class)
     void setTranslation(Translation translation);
@@ -27,7 +28,10 @@ interface TranslateView extends MvpView {
     @StateStrategyType(AddToEndSingleStrategy.class)
     void setPlaceholderVisibility(boolean visible);
 
-    void setLanguage(Language language, final int type);
+    @StateStrategyType(AddToEndSingleStrategy.class)
+    void setSourceLanguage(Language language);
 
-    void updateFavoriteIcon(boolean active);
+    @StateStrategyType(AddToEndSingleStrategy.class)
+    void setTargetLanguage(Language language);
+
 }

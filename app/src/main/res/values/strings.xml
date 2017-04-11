@@ -11,10 +11,11 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="languageFrom">Language of text</string>
     <string name="languageTo">Language of translatedText</string>
-    <string name="areYouShure">Are you shure you want delete %s?</string>
+    <string name="areYouSure">Are you sure you want delete %s?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="noTranslations">There is no translations in %s</string>
     <string name="connectionError">Connection error!</string>
     <string name="delete">Delete</string>
+    <string name="search">Search</string>
 </resources>

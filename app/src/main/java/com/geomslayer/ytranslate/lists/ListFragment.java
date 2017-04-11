@@ -8,14 +8,18 @@ import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.geomslayer.ytranslate.BaseApp;
 import com.geomslayer.ytranslate.R;
+import com.geomslayer.ytranslate.RequestHandler;
 import com.geomslayer.ytranslate.models.DaoSession;
 import com.geomslayer.ytranslate.models.Translation;
 import com.geomslayer.ytranslate.models.TranslationDao;
@@ -29,7 +33,8 @@ import java.util.List;
 
 public class ListFragment extends Fragment
         implements AlertFragment.DialogListener,
-        TranslationAdapter.AdapterListener {
+        TranslationAdapter.AdapterListener,
+        RequestHandler.OnRequestReadyListener {
 
     private static final String TYPE = "type";
     public static final int HISTORY = 0;
@@ -39,8 +44,11 @@ public class ListFragment extends Fragment
     private RecyclerView recycler;
     private TranslationAdapter adapter;
     private ViewGroup placeholderView;
+    private EditText searchBar;
+    private ImageView clearButton;
 
     private Callback callback;
+    private RequestHandler requestHandler;
 
     private TranslationDao translationDao;
 
@@ -68,18 +76,47 @@ public class ListFragment extends Fragment
                              Bundle savedInstanceState) {
         View fragmentView = inflater.inflate(R.layout.fragment_lists, container, false);
 
+        requestHandler = new RequestHandler(this);
+
         DaoSession session = ((BaseApp) getActivity().getApplication()).getDaoSession();
         translationDao = session.getTranslationDao();
 
         toolbar = (Toolbar) fragmentView.findViewById(R.id.toolbar);
         recycler = (RecyclerView) fragmentView.findViewById(R.id.recyclerView);
         placeholderView = (ViewGroup) fragmentView.findViewById(R.id.placeholder);
+        searchBar = (EditText) fragmentView.findViewById(R.id.search);
+        clearButton = (ImageView) fragmentView.findViewById(R.id.clearButton);
 
         initToolbar();
         initRecyclerView();
         initPlaceholder();
+        initSearchBar();
 
         return fragmentView;
+    }
+
+    private void initSearchBar() {
+        searchBar.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                if (requestHandler.isCancelled()) {
+                    requestHandler = new RequestHandler(ListFragment.this);
+                }
+                if (editable.toString().isEmpty()) {
+                    clearButton.setVisibility(View.GONE);
+                } else {
+                    clearButton.setVisibility(View.VISIBLE);
+                }
+                requestHandler.doFakeRequest();
+            }
+        });
+        clearButton.setOnClickListener(view -> searchBar.setText(""));
     }
 
     private void initPlaceholder() {
@@ -175,6 +212,12 @@ public class ListFragment extends Fragment
     }
 
     @Override
+    public void onPause() {
+        requestHandler.cancel(true);
+        super.onPause();
+    }
+
+    @Override
     public void setPlaceholderVisibility(boolean visible) {
         placeholderView.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
@@ -191,6 +234,22 @@ public class ListFragment extends Fragment
             translationDao.update(translation);
         }
         adapter.getDataset().clear();
+        adapter.notifyDataSetHasChanged();
+    }
+
+    @Override
+    public void doRealRequest() {
+        String query = "%" + searchBar.getText().toString().trim() + "%";
+        QueryBuilder<Translation> builder = translationDao.queryBuilder()
+                .whereOr(TranslationDao.Properties.SourceText.like(query),
+                        TranslationDao.Properties.TranslatedText.like(query))
+                .orderDesc(TranslationDao.Properties.Moment);
+        if (getArguments().getInt(TYPE) == HISTORY) {
+            builder.where(TranslationDao.Properties.InHistory.eq(true));
+        } else {
+            builder.where(TranslationDao.Properties.InFavorites.eq(true));
+        }
+        adapter.setDataset(new ArrayList<>(builder.list()));
         adapter.notifyDataSetHasChanged();
     }
 
