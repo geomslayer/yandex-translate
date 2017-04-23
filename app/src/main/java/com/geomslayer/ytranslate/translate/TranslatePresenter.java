@@ -70,6 +70,7 @@ public class TranslatePresenter extends MvpPresenter<TranslateView>
             BaseApp.loadLanguages(languageDao);
             return;
         }
+        // first we detect source language then translate
         BaseApp.getApi()
                 .detectLanguage(capture.getText(), capture.getSource())
                 .enqueue(new Callback<Response>() {
@@ -96,8 +97,10 @@ public class TranslatePresenter extends MvpPresenter<TranslateView>
                 });
     }
 
+    // translate
     private void finishTranslation(Capture capture) {
         lastTranslation = findTranslation(capture);
+        // looking for translation in cache
         if (lastTranslation != null) {
             onTranslationReceived();
             return;
@@ -122,6 +125,7 @@ public class TranslatePresenter extends MvpPresenter<TranslateView>
                         lastTranslation.setTranslatedText(stringBuilder.toString());
                         lastTranslation.setSourceCode(capture.getSource());
                         lastTranslation.setTargetCode(capture.getTarget());
+                        // save in cache
                         translationDao.insert(lastTranslation);
 
                         if (lastTranslation.getSource() != null && lastTranslation.getTarget() != null) {
@@ -156,6 +160,7 @@ public class TranslatePresenter extends MvpPresenter<TranslateView>
                 .unique();
     }
 
+    // get translation from database
     private Translation findTranslation(String text, String source, String target) {
         return translationDao.queryBuilder()
                 .where(TranslationDao.Properties.SourceText.eq(text))
@@ -219,6 +224,7 @@ public class TranslatePresenter extends MvpPresenter<TranslateView>
     }
 
     void onKeyboardClosed() {
+        // save translation in history
         if (requestHandler.getRequestsCount() == 0) {
             saveInHistory();
         } else {
@@ -239,6 +245,7 @@ public class TranslatePresenter extends MvpPresenter<TranslateView>
         requestHandler.cancel(true);
     }
 
+    // called when user clicks on translation in History or Favorites
     void showLastInHistory() {
         lastTranslation = loadLastTranslation();
         getViewState().setTranslation(lastTranslation);

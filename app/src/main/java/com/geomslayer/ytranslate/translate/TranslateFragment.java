@@ -28,8 +28,6 @@ import net.yslibrary.android.keyboardvisibilityevent.Unregistrar;
 public class TranslateFragment extends MvpAppCompatFragment
         implements LanguageFragment.LanguageDialogListener, TranslateView {
 
-    private static final String TAG = "TranslateFragment";
-
     @InjectPresenter
     TranslatePresenter presenter;
 
@@ -83,6 +81,7 @@ public class TranslateFragment extends MvpAppCompatFragment
     }
 
     private void prepareEditText() {
+        // fix size of main EditText
         toTranslate.setHorizontallyScrolling(false);
         if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
             toTranslate.setMaxLines(5);
@@ -108,6 +107,7 @@ public class TranslateFragment extends MvpAppCompatFragment
             }
         });
 
+        // save in history on keyboard close
         unregistrar = KeyboardVisibilityEvent.registerEventListener(
                 getActivity(),
                 isOpen -> {
@@ -155,6 +155,7 @@ public class TranslateFragment extends MvpAppCompatFragment
         return languageViews[type].getTag().toString();
     }
 
+    // does real translation request
     @Override
     public void requestData() {
         presenter.translateNow(getCapture());
@@ -178,6 +179,7 @@ public class TranslateFragment extends MvpAppCompatFragment
         translationView.setText(text);
     }
 
+    // there is information for translation
     private Capture getCapture() {
         return new Capture(
                 getTextToTranslate(),
@@ -216,6 +218,7 @@ public class TranslateFragment extends MvpAppCompatFragment
         }
     }
 
+    // this is notification of internet unavailability
     @Override
     public void setPlaceholderVisibility(boolean visible) {
         if (visible) {

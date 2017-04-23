@@ -186,7 +186,7 @@ public class ListFragment extends Fragment
         translation.setMoment(Calendar.getInstance().getTime());
         translation.setInHistory(true);
         translationDao.update(translation);
-        callback.showTranslation(translation);
+        callback.showTranslation();
     }
 
     @Override
@@ -222,6 +222,7 @@ public class ListFragment extends Fragment
         placeholderView.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
+    // agreed to delete all
     @Override
     public void onPositiveButtonClick() {
         final int type = getArguments().getInt(TYPE);
@@ -237,6 +238,7 @@ public class ListFragment extends Fragment
         adapter.notifyDataSetHasChanged();
     }
 
+    // for search translations
     @Override
     public void doRealRequest() {
         String query = "%" + searchBar.getText().toString().trim() + "%";
@@ -254,7 +256,7 @@ public class ListFragment extends Fragment
     }
 
     public interface Callback {
-        void showTranslation(Translation translation);
+        void showTranslation();
     }
 
 }

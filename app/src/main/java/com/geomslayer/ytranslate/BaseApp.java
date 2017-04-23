@@ -1,7 +1,6 @@
 package com.geomslayer.ytranslate;
 
 import android.app.Application;
-import android.util.Log;
 
 import com.geomslayer.ytranslate.models.DaoMaster;
 import com.geomslayer.ytranslate.models.DaoSession;
@@ -45,29 +44,34 @@ public class BaseApp extends Application {
     public void onCreate() {
         super.onCreate();
 
+        // create retrofit service for api calls
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(TranslateApi.BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         translateApi = retrofit.create(TranslateApi.class);
 
+        // init database
         DaoMaster.DevOpenHelper helper = new DaoMaster.DevOpenHelper(this, "translations-db");
         daoSession = new DaoMaster(helper.getWritableDb()).newSession();
 
         LanguageDao languageDao = daoSession.getLanguageDao();
         TranslationDao translationDao = daoSession.getTranslationDao();
 
+        // delete rubbish
         List<Translation> toDelete = translationDao.queryBuilder()
                 .where(TranslationDao.Properties.InHistory.eq(false))
                 .where(TranslationDao.Properties.InFavorites.eq(false))
                 .list();
         translationDao.deleteInTx(toDelete);
 
+        // add default languages
         if (languageDao.count() == 0) {
             languageDao.insert(new Language("ru", "Russian"));
             languageDao.insert(new Language("en", "English"));
         }
 
+        // trying to load languages if there is internet connection
         loadLanguages(languageDao);
     }
 
@@ -90,7 +94,7 @@ public class BaseApp extends Application {
                             String name = langPair.getValue();
                             langs.add(new Language(code, name));
                         }
-                        languageDao.insertInTx(langs);
+                        languageDao.insertOrReplaceInTx(langs);
                         uploaded = true;
                     }
 

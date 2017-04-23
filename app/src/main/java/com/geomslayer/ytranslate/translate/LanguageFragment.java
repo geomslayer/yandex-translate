@@ -22,6 +22,7 @@ import com.geomslayer.ytranslate.models.Language;
 
 import java.util.ArrayList;
 
+// this dialog opens when user choose language
 public class LanguageFragment extends MvpAppCompatDialogFragment
         implements DialogView, LanguageAdapter.OnItemClickListener {
 
@@ -104,6 +105,7 @@ public class LanguageFragment extends MvpAppCompatDialogFragment
         presenter.fetchLanguages();
     }
 
+    // on choose language
     @Override
     public void onClick(int position) {
         LanguageDialogListener listener = (LanguageDialogListener) getTargetFragment();

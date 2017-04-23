@@ -16,6 +16,7 @@ import java.util.Map;
 import retrofit2.Call;
 import retrofit2.Callback;
 
+// it is related to languages list
 @InjectViewState
 public class DialogPresenter extends MvpPresenter<DialogView> {
 
@@ -56,7 +57,7 @@ public class DialogPresenter extends MvpPresenter<DialogView> {
     }
 
     void filterLanguages(String query) {
-        query = "%" + query.trim() + "%";
+        query = query.trim() + "%";
         List<Language> entries = languageDao.queryBuilder()
                 .where(LanguageDao.Properties.Name.like(query))
                 .orderAsc(LanguageDao.Properties.Name)

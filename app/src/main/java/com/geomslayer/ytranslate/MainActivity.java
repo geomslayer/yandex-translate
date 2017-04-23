@@ -7,7 +7,6 @@ import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 
 import com.geomslayer.ytranslate.lists.ListFragment;
-import com.geomslayer.ytranslate.models.Translation;
 import com.geomslayer.ytranslate.translate.TranslateFragment;
 
 public class MainActivity extends AppCompatActivity
@@ -71,6 +70,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onBackPressed() {
+        // don't need any elements in stack
         finish();
     }
 
@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void showTranslation(Translation translation) {
+    public void showTranslation() {
         TranslateFragment homeFrag = (TranslateFragment)
                 getSupportFragmentManager().findFragmentByTag(HOME_TAG);
         homeFrag.showLastInHistory();
